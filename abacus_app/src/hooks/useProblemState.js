@@ -54,6 +54,7 @@ export const useProblemState = () => {
         let totalSum = 0;
         let totalRowDigits = 0;
         const frequency = []; // Array of Arrays [row][digit]
+        const totalFrequency = Array(10).fill(0);
         const consecutive = Array(10).fill(null).map(() => Array(10).fill(0));
         const rowDigitCounts = [];
 
@@ -73,6 +74,7 @@ export const useProblemState = () => {
                 if (isLeading) return; // Skip stats for leading zeros
 
                 rowFreq[d]++;
+                totalFrequency[d]++;
                 rowDigitCount++;
 
                 // Consecutive count
@@ -91,6 +93,7 @@ export const useProblemState = () => {
         return {
             totalSum,
             frequency,
+            totalFrequency,
             consecutive,
             rowDigitCounts,
             totalRowDigits
@@ -185,6 +188,7 @@ export const useProblemState = () => {
         generateRandomGrid,
         totalSum: stats.totalSum,
         frequency: stats.frequency,
+        totalFrequency: stats.totalFrequency,
         consecutive: stats.consecutive,
         rowDigitCounts: stats.rowDigitCounts,
         totalRowDigits: stats.totalRowDigits

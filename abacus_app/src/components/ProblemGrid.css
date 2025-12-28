@@ -27,6 +27,10 @@
     box-sizing: border-box;
 }
 
+.grid-row:nth-child(odd) {
+    background-color: #f8fafc;
+}
+
 .row-number {
     width: 25px;
     font-size: 0.8rem;
@@ -39,6 +43,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
+}
+
+/* Vertical lines every 3 columns (after indices 2, 5, 8) */
+.digit-btn-wrapper:nth-child(3n + 4):not(:last-child) {
+    border-right: 1px solid #cbd5e1;
+    margin-right: 2px;
+    padding-right: 2px;
 }
 
 .digit-btn {

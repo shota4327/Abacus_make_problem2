@@ -69,6 +69,7 @@ td.warn {
     border-collapse: collapse;
     font-size: 1rem;
     text-align: center;
+    table-layout: fixed;
 }
 
 .frequency-table th {
@@ -78,10 +79,8 @@ td.warn {
     z-index: 1;
     border-bottom: 1px solid var(--border-color);
     border-right: 1px solid var(--border-color);
-    /* Added vertical border */
     padding: 2px;
-    width: 20px;
-    min-width: 20px;
+    width: 32px;
     box-sizing: border-box;
 }
 
@@ -89,9 +88,7 @@ td.warn {
     padding: 2px;
     border-bottom: 1px solid #f1f5f9;
     border-right: 1px solid #f1f5f9;
-    /* Added vertical border */
-    width: 20px;
-    min-width: 20px;
+    width: 32px;
     height: 30px;
     box-sizing: border-box;
 }
@@ -100,10 +97,37 @@ td.warn {
     height: 30px;
 }
 
+.frequency-table tbody tr:nth-child(even) {
+    background: #f8fafc;
+}
+
+.frequency-table tfoot .total-row {
+    background: white;
+    font-weight: bold;
+    color: var(--text-color);
+    font-size: 1.1rem;
+}
+
+.frequency-table tfoot .total-row td {
+    border-top: 2px solid var(--text-color);
+    border-bottom: none;
+    padding-top: 0.5rem;
+    height: auto;
+}
+
+/* Spacer for tfoot */
+.frequency-table tfoot::before {
+    content: '-';
+    display: block;
+    line-height: 1rem;
+    color: transparent;
+}
+
 .frequency-table .row-label {
     color: #64748b;
     font-size: 0.7rem;
     border-right: 1px solid #f1f5f9;
+    width: 45px;
 }
 
 /* Consecutive Counter specific */

@@ -23,6 +23,7 @@ function App() {
     generateRandomGrid,
     totalSum,
     frequency,
+    totalFrequency,
     consecutive,
     rowDigitCounts,
     totalRowDigits
@@ -41,7 +42,10 @@ function App() {
         totalRowDigits={totalRowDigits}
         updateRowDigitCount={updateRowDigitCount}
       />
-      <FrequencyCounter frequency={frequency} />
+      <FrequencyCounter
+        frequency={frequency}
+        totalFrequency={totalFrequency}
+      />
       <ConsecutiveCounter consecutive={consecutive} />
       <ConditionPanel
         minDigit={minDigit}

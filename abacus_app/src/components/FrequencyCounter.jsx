@@ -1,7 +1,7 @@
 import React from 'react';
 import './Stats.css';
 
-const FrequencyCounter = ({ frequency }) => {
+const FrequencyCounter = ({ frequency, totalFrequency }) => {
     return (
         <div className="panel stats-panel">
             <h2>出現回数</h2>
@@ -27,6 +27,16 @@ const FrequencyCounter = ({ frequency }) => {
                             </tr>
                         ))}
                     </tbody>
+                    <tfoot>
+                        <tr className="total-row">
+                            <td className="row-label">合計</td>
+                            {totalFrequency?.map((count, num) => (
+                                <td key={num} className={num % 2 !== 0 ? 'highlight-orange-light' : ''}>
+                                    {count}
+                                </td>
+                            ))}
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>
