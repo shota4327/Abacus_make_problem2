@@ -108,11 +108,31 @@ td.warn {
     font-size: 1.1rem;
 }
 
+.diff-row {
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.diff-row td.pos {
+    color: var(--danger-color);
+}
+
+.diff-row td.neg {
+    color: var(--primary-color);
+}
+
+.frequency-table tfoot .total-row td,
+.frequency-table tfoot .diff-row td {
+    border-top: 1px solid #cbd5e1;
+    border-bottom: none;
+    padding: 6px 2px;
+    height: auto;
+    text-align: center;
+}
+
 .frequency-table tfoot .total-row td {
     border-top: 2px solid var(--text-color);
-    border-bottom: none;
-    padding-top: 0.5rem;
-    height: auto;
+    padding-top: 0.8rem;
 }
 
 /* Spacer for tfoot */
@@ -127,7 +147,8 @@ td.warn {
     color: #64748b;
     font-size: 0.7rem;
     border-right: 1px solid #f1f5f9;
-    width: 45px;
+    width: 65px;
+    white-space: nowrap;
 }
 
 /* Consecutive Counter specific */

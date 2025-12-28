@@ -1,24 +1,54 @@
 import React, { useState } from 'react';
 import './ConditionPanel.css';
 
-const ConditionPanel = ({ minDigit, maxDigit, setMinDigit, setMaxDigit, targetTotalDigits, setTargetTotalDigits, rowCount, setRowCount }) => {
-    const [activeSelector, setActiveSelector] = useState(null); // 'min' | 'max' | 'total' | 'rows' | null
+const ConditionPanel = ({
+    minDigit, maxDigit, setMinDigit, setMaxDigit,
+    targetTotalDigits, setTargetTotalDigits,
+    rowCount, setRowCount,
+    plusOneDigit, setPlusOneDigit,
+    minusOneDigit, setMinusOneDigit,
+    enclosedDigit, setEnclosedDigit,
+    sandwichedDigit, setSandwichedDigit,
+    consecutiveDigit, setConsecutiveDigit
+}) => {
+    const [activeSelector, setActiveSelector] = useState(null);
     const lengths = [5, 6, 7, 8, 9, 10, 11, 12];
     const totalOptions = [120, 130, 140];
     const rowOptions = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+    const digitOptions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
     const handleSelect = (val) => {
-        if (activeSelector === 'min') {
-            setMinDigit(Math.min(val, maxDigit));
-        } else if (activeSelector === 'max') {
-            setMaxDigit(Math.max(val, minDigit));
-        } else if (activeSelector === 'total') {
-            setTargetTotalDigits(val);
-        } else if (activeSelector === 'rows') {
-            setRowCount(val);
-        }
+        if (activeSelector === 'min') setMinDigit(Math.min(val, maxDigit));
+        else if (activeSelector === 'max') setMaxDigit(Math.max(val, minDigit));
+        else if (activeSelector === 'total') setTargetTotalDigits(val);
+        else if (activeSelector === 'rows') setRowCount(val);
+        else if (activeSelector === 'plusOne') setPlusOneDigit(val);
+        else if (activeSelector === 'minusOne') setMinusOneDigit(val);
+        else if (activeSelector === 'enclosed') setEnclosedDigit(val);
+        else if (activeSelector === 'sandwiched') setSandwichedDigit(val);
+        else if (activeSelector === 'consecutive') setConsecutiveDigit(val);
         setActiveSelector(null);
     };
+
+    const renderDigitSelector = (type, currentVal) => (
+        <div className="picker-wrapper">
+            <button
+                className={`picker-btn ${activeSelector === type ? 'active' : ''}`}
+                onClick={() => setActiveSelector(activeSelector === type ? null : type)}
+            >
+                {currentVal}
+            </button>
+            {activeSelector === type && (
+                <div className="picker-popover">
+                    {digitOptions.map((d, i) => (
+                        <button key={i} onClick={() => handleSelect(d)}>
+                            {d}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 
     return (
         <div className="panel condition-panel">
@@ -96,11 +126,28 @@ const ConditionPanel = ({ minDigit, maxDigit, setMinDigit, setMaxDigit, targetTo
                         </div>
                     </div>
                 </div>
-                <div className="condition-item">＋１文字: -</div>
-                <div className="condition-item">－１文字: -</div>
-                <div className="condition-item">囲み文字: -</div>
-                <div className="condition-item">はさまれ文字: -</div>
-                <div className="condition-item">連続文字: -</div>
+
+                <div className="condition-item">
+                    <span className="label">＋１文字:</span>
+                    {renderDigitSelector('plusOne', plusOneDigit)}
+                </div>
+                <div className="condition-item">
+                    <span className="label">－１文字:</span>
+                    {renderDigitSelector('minusOne', minusOneDigit)}
+                </div>
+                <div className="condition-item">
+                    <span className="label">囲み文字:</span>
+                    {renderDigitSelector('enclosed', enclosedDigit)}
+                </div>
+                <div className="condition-item">
+                    <span className="label">はさまれ文字:</span>
+                    {renderDigitSelector('sandwiched', sandwichedDigit)}
+                </div>
+                <div className="condition-item">
+                    <span className="label">連続文字:</span>
+                    {renderDigitSelector('consecutive', consecutiveDigit)}
+                </div>
+
                 <div className="condition-item">マイナス: -</div>
                 <div className="condition-item">１口目: -</div>
                 <div className="condition-item">最終口: -</div>

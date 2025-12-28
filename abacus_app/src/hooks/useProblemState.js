@@ -12,8 +12,15 @@ export const useProblemState = () => {
     const [grid, setGrid] = useState(createInitialGrid);
     const [minDigit, setMinDigit] = useState(5);
     const [maxDigit, setMaxDigit] = useState(12);
-    const [targetTotalDigits, setTargetTotalDigits] = useState(120);
+    const [targetTotalDigits, setTargetTotalDigits] = useState(130);
     const [rowCount, setRowCount] = useState(20);
+
+    // New Conditions
+    const [plusOneDigit, setPlusOneDigit] = useState(0);
+    const [minusOneDigit, setMinusOneDigit] = useState(0);
+    const [enclosedDigit, setEnclosedDigit] = useState(0);
+    const [sandwichedDigit, setSandwichedDigit] = useState(0);
+    const [consecutiveDigit, setConsecutiveDigit] = useState(0);
 
     // Update a single digit
     const updateDigit = useCallback((rowIndex, colIndex, value) => {
@@ -90,15 +97,23 @@ export const useProblemState = () => {
             totalSum += parseInt(rowValStr, 10) || 0;
         }
 
+        const frequencyDiffs = Array(10).fill(0).map((_, digit) => {
+            let baseline = targetTotalDigits / 10;
+            if (digit === plusOneDigit) baseline += 1;
+            if (digit === minusOneDigit) baseline -= 1;
+            return totalFrequency[digit] - baseline;
+        });
+
         return {
             totalSum,
             frequency,
             totalFrequency,
+            frequencyDiffs,
             consecutive,
             rowDigitCounts,
             totalRowDigits
         };
-    }, [grid, rowCount]);
+    }, [grid, rowCount, targetTotalDigits, plusOneDigit, minusOneDigit]);
 
     const generateRandomGrid = useCallback(() => {
         const n = rowCount;
@@ -186,9 +201,15 @@ export const useProblemState = () => {
         updateDigit,
         updateRowDigitCount,
         generateRandomGrid,
+        plusOneDigit, setPlusOneDigit,
+        minusOneDigit, setMinusOneDigit,
+        enclosedDigit, setEnclosedDigit,
+        sandwichedDigit, setSandwichedDigit,
+        consecutiveDigit, setConsecutiveDigit,
         totalSum: stats.totalSum,
         frequency: stats.frequency,
         totalFrequency: stats.totalFrequency,
+        frequencyDiffs: stats.frequencyDiffs,
         consecutive: stats.consecutive,
         rowDigitCounts: stats.rowDigitCounts,
         totalRowDigits: stats.totalRowDigits

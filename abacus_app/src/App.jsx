@@ -24,9 +24,15 @@ function App() {
     totalSum,
     frequency,
     totalFrequency,
+    frequencyDiffs,
     consecutive,
     rowDigitCounts,
-    totalRowDigits
+    totalRowDigits,
+    plusOneDigit, setPlusOneDigit,
+    minusOneDigit, setMinusOneDigit,
+    enclosedDigit, setEnclosedDigit,
+    sandwichedDigit, setSandwichedDigit,
+    consecutiveDigit, setConsecutiveDigit
   } = useProblemState();
 
   return (
@@ -45,6 +51,7 @@ function App() {
       <FrequencyCounter
         frequency={frequency}
         totalFrequency={totalFrequency}
+        frequencyDiffs={frequencyDiffs}
       />
       <ConsecutiveCounter consecutive={consecutive} />
       <ConditionPanel
@@ -56,6 +63,16 @@ function App() {
         setTargetTotalDigits={setTargetTotalDigits}
         rowCount={rowCount}
         setRowCount={setRowCount}
+        plusOneDigit={plusOneDigit}
+        setPlusOneDigit={setPlusOneDigit}
+        minusOneDigit={minusOneDigit}
+        setMinusOneDigit={setMinusOneDigit}
+        enclosedDigit={enclosedDigit}
+        setEnclosedDigit={setEnclosedDigit}
+        sandwichedDigit={sandwichedDigit}
+        setSandwichedDigit={setSandwichedDigit}
+        consecutiveDigit={consecutiveDigit}
+        setConsecutiveDigit={setConsecutiveDigit}
       />
     </div>
   );

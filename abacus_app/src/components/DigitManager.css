@@ -98,7 +98,8 @@
 
 .digit-total-row {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
+    gap: 0.5rem;
     align-items: center;
     margin-top: 1rem;
     padding: 0.5rem 4px 0 4px;
