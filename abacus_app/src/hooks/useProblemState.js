@@ -10,6 +10,9 @@ const createInitialGrid = () => {
 
 export const useProblemState = () => {
     const [grid, setGrid] = useState(createInitialGrid);
+    const [minDigit, setMinDigit] = useState(5);
+    const [maxDigit, setMaxDigit] = useState(12);
+    const [targetTotalDigits, setTargetTotalDigits] = useState(120);
 
     // Update a single digit
     const updateDigit = useCallback((rowIndex, colIndex, value) => {
@@ -20,34 +23,47 @@ export const useProblemState = () => {
         });
     }, []);
 
+    // Helper to generate a random row of specific length
+    const generateRandomRow = useCallback((length) => {
+        const row = Array(COL_COUNT).fill(null);
+        for (let i = 0; i < length; i++) {
+            row[COL_COUNT - 1 - i] = Math.floor(Math.random() * 10);
+        }
+        return row;
+    }, []);
+
+    // Update individual row length
+    const updateRowDigitCount = useCallback((rowIndex, length) => {
+        setGrid(prevGrid => {
+            const newGrid = prevGrid.map(row => [...row]);
+            newGrid[rowIndex] = generateRandomRow(length);
+            return newGrid;
+        });
+    }, [generateRandomRow]);
+
     // Calculate stats
     const stats = useMemo(() => {
         let totalSum = 0;
+        let totalRowDigits = 0;
         const frequency = []; // Array of Arrays [row][digit]
         const consecutive = Array(10).fill(null).map(() => Array(10).fill(0));
+        const rowDigitCounts = [];
 
         grid.forEach(row => {
-            // 1. Calculate Sum
-            // Convert row array to number string, treating null/undefined as 0 or strictly
-            // Assuming row aligns to 10^11, 10^10... 10^0
             let rowValStr = "";
-            let hasStarted = false;
-
-            // For calculation, we construct the number. 
-            // Note: If using right alignment, we should carefully map columns to powers of 10.
-            // Assuming col 0 is highest digit (10^11) -> col 11 is lowest (10^0).
-
+            let rowDigitCount = 0;
             let isLeading = true;
             const rowFreq = Array(10).fill(0);
+
             row.forEach((digit, colIndex) => {
                 const d = digit === null ? 0 : digit;
-
                 rowValStr += d;
 
                 if (d !== 0) isLeading = false;
                 if (isLeading) return; // Skip stats for leading zeros
 
                 rowFreq[d]++;
+                rowDigitCount++;
 
                 // Consecutive count
                 if (colIndex < COL_COUNT - 1) {
@@ -55,36 +71,44 @@ export const useProblemState = () => {
                     consecutive[d][nextDigit]++;
                 }
             });
-            frequency.push(rowFreq);
 
+            frequency.push(rowFreq);
+            rowDigitCounts.push(rowDigitCount);
+            totalRowDigits += rowDigitCount;
             totalSum += parseInt(rowValStr, 10) || 0;
         });
 
         return {
             totalSum,
             frequency,
-            consecutive
+            consecutive,
+            rowDigitCounts,
+            totalRowDigits
         };
     }, [grid]);
 
+    const generateRandomGrid = useCallback(() => {
+        setGrid(Array(ROW_COUNT).fill(null).map(() => {
+            const length = Math.floor(Math.random() * (maxDigit - minDigit + 1)) + minDigit;
+            return generateRandomRow(length);
+        }));
+    }, [minDigit, maxDigit, generateRandomRow]);
+
     return {
         grid,
+        minDigit,
+        maxDigit,
+        targetTotalDigits,
+        setMinDigit,
+        setMaxDigit,
+        setTargetTotalDigits,
         updateDigit,
+        updateRowDigitCount,
+        generateRandomGrid,
         totalSum: stats.totalSum,
         frequency: stats.frequency,
         consecutive: stats.consecutive,
-        generateRandomGrid: useCallback((minDigits, maxDigits) => {
-            setGrid(Array(ROW_COUNT).fill(null).map(() => {
-                const row = Array(COL_COUNT).fill(null);
-                // Random length between min and max
-                const length = Math.floor(Math.random() * (maxDigits - minDigits + 1)) + minDigits;
-
-                // Fill from right (index 11) to left
-                for (let i = 0; i < length; i++) {
-                    row[COL_COUNT - 1 - i] = Math.floor(Math.random() * 10);
-                }
-                return row;
-            }));
-        }, [])
+        rowDigitCounts: stats.rowDigitCounts,
+        totalRowDigits: stats.totalRowDigits
     };
 };

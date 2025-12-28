@@ -1,47 +1,56 @@
 import React, { useState } from 'react';
 import './DigitManager.css';
-import { useProblemState } from '../hooks/useProblemState.js'; // Ensure correct path if needed, but props should be passed from App usually.
 
-// Accepting generateRandomGrid as prop from App to avoid double hook instantiation if context isn't used.
-const DigitManager = ({ generateRandomGrid }) => {
-    const [minDigits, setMinDigits] = useState(3);
-    const [maxDigits, setMaxDigits] = useState(5);
+const DigitManager = ({ rowDigitCounts, totalRowDigits, updateRowDigitCount }) => {
+    const [activeSelector, setActiveSelector] = useState(null); // { rowIndex }
 
-    const handleApply = () => {
-        if (generateRandomGrid) {
-            generateRandomGrid(Number(minDigits), Number(maxDigits));
-        }
+    const lengths = [5, 6, 7, 8, 9, 10, 11, 12];
+
+    const handleLengthSelect = (rowIndex, length) => {
+        updateRowDigitCount(rowIndex, length);
+        setActiveSelector(null);
     };
 
     return (
         <div className="panel digit-panel">
             <h2>桁数管理</h2>
-            <div className="control-group">
-                <label>ベース (最小)</label>
-                <input
-                    type="number"
-                    min="1"
-                    max="12"
-                    value={minDigits}
-                    onChange={(e) => setMinDigits(e.target.value)}
-                />
+            <div className="digit-manager-content">
+                <div className="grid-header-spacer"></div>
+                <div className="digit-rows-container">
+                    {rowDigitCounts.map((count, index) => (
+                        <div key={index} className="digit-row-item">
+                            <span className="row-num">{index + 1}</span>
+                            <div className="digit-button-wrapper">
+                                <button
+                                    className="digit-length-btn"
+                                    onClick={() => setActiveSelector(activeSelector?.rowIndex === index ? null : { rowIndex: index })}
+                                >
+                                    {count}
+                                </button>
+                                {activeSelector?.rowIndex === index && (
+                                    <div className="length-selector-overlay">
+                                        <div className="length-selector-grid">
+                                            {lengths.map(len => (
+                                                <button
+                                                    key={len}
+                                                    className="length-opt-btn"
+                                                    onClick={() => handleLengthSelect(index, len)}
+                                                >
+                                                    {len}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <div className="digit-total-row">
+                    <span className="total-label">合計</span>
+                    <span className="total-value">{totalRowDigits}</span>
+                </div>
             </div>
-            <div className="control-group">
-                <label>最大桁数</label>
-                <input
-                    type="number"
-                    min="1"
-                    max="12"
-                    value={maxDigits}
-                    onChange={(e) => setMaxDigits(e.target.value)}
-                />
-            </div>
-            <div className="info">
-                差: {maxDigits - minDigits} 桁
-            </div>
-            <button className="generate-btn" onClick={handleApply}>
-                再生成
-            </button>
         </div>
     );
 };

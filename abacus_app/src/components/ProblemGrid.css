@@ -104,3 +104,24 @@
     background-color: var(--primary-color);
     color: white;
 }
+
+.grid-footer {
+    display: flex;
+    justify-content: center;
+    padding: 10px 0;
+}
+
+.grid-footer .generate-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: opacity 0.2s;
+}
+
+.grid-footer .generate-btn:hover {
+    opacity: 0.9;
+}

@@ -8,15 +8,47 @@ import { useProblemState } from './hooks/useProblemState';
 import './index.css';
 
 function App() {
-  const { grid, updateDigit, totalSum, frequency, consecutive, generateRandomGrid } = useProblemState();
+  const {
+    grid,
+    minDigit,
+    maxDigit,
+    targetTotalDigits,
+    setMinDigit,
+    setMaxDigit,
+    setTargetTotalDigits,
+    updateDigit,
+    updateRowDigitCount,
+    generateRandomGrid,
+    totalSum,
+    frequency,
+    consecutive,
+    rowDigitCounts,
+    totalRowDigits
+  } = useProblemState();
 
   return (
     <div className="app-container">
-      <ProblemGrid grid={grid} updateDigit={updateDigit} totalSum={totalSum} />
-      <DigitManager generateRandomGrid={generateRandomGrid} />
+      <ProblemGrid
+        grid={grid}
+        updateDigit={updateDigit}
+        totalSum={totalSum}
+        generateRandomGrid={generateRandomGrid}
+      />
+      <DigitManager
+        rowDigitCounts={rowDigitCounts}
+        totalRowDigits={totalRowDigits}
+        updateRowDigitCount={updateRowDigitCount}
+      />
       <FrequencyCounter frequency={frequency} />
       <ConsecutiveCounter consecutive={consecutive} />
-      <ConditionPanel />
+      <ConditionPanel
+        minDigit={minDigit}
+        maxDigit={maxDigit}
+        setMinDigit={setMinDigit}
+        setMaxDigit={setMaxDigit}
+        targetTotalDigits={targetTotalDigits}
+        setTargetTotalDigits={setTargetTotalDigits}
+      />
     </div>
   );
 }

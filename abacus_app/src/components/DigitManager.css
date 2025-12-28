@@ -1,44 +1,114 @@
 .digit-panel {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
 }
 
-.control-group {
+.digit-manager-content {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
 }
 
-.control-group label {
-    font-size: 0.9rem;
+.grid-header-spacer {
+    height: 30px;
+}
+
+.digit-rows-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.digit-row-item {
+    display: flex;
+    align-items: center;
+    height: 30px;
+    /* Match grid row height */
+    padding: 0 4px;
+    border-bottom: 1px solid #f1f5f9;
+    box-sizing: border-box;
+}
+
+.row-num {
+    width: 24px;
+    font-size: 0.75rem;
     color: #64748b;
 }
 
-.control-group input {
-    padding: 0.5rem;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 1rem;
+.digit-button-wrapper {
+    position: relative;
+    flex: 1;
+    display: flex;
+    justify-content: center;
 }
 
-.generate-btn {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 0.75rem;
+.digit-length-btn {
+    width: 30px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--border-color);
+    background: white;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.digit-length-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.length-selector-overlay {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    padding: 8px;
+}
+
+.length-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+}
+
+.length-opt-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
     border-radius: 4px;
     cursor: pointer;
     font-weight: bold;
-    margin-top: auto;
 }
 
-.generate-btn:hover {
-    opacity: 0.9;
+.length-opt-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
 }
 
-.info {
-    font-size: 0.9rem;
-    text-align: center;
+.digit-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding: 0.5rem 4px 0 4px;
+    border-top: 2px solid var(--text-color);
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.total-label {
     color: #64748b;
+    font-size: 0.8rem;
+}
+
+.total-value {
+    color: var(--text-color);
+    font-family: monospace;
 }
