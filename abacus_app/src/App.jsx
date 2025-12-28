@@ -13,9 +13,11 @@ function App() {
     minDigit,
     maxDigit,
     targetTotalDigits,
+    rowCount,
     setMinDigit,
     setMaxDigit,
     setTargetTotalDigits,
+    setRowCount,
     updateDigit,
     updateRowDigitCount,
     generateRandomGrid,
@@ -48,6 +50,8 @@ function App() {
         setMaxDigit={setMaxDigit}
         targetTotalDigits={targetTotalDigits}
         setTargetTotalDigits={setTargetTotalDigits}
+        rowCount={rowCount}
+        setRowCount={setRowCount}
       />
     </div>
   );

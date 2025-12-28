@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import './ConditionPanel.css';
 
-const ConditionPanel = ({ minDigit, maxDigit, setMinDigit, setMaxDigit, targetTotalDigits, setTargetTotalDigits }) => {
-    const [activeSelector, setActiveSelector] = useState(null); // 'min' | 'max' | 'total' | null
+const ConditionPanel = ({ minDigit, maxDigit, setMinDigit, setMaxDigit, targetTotalDigits, setTargetTotalDigits, rowCount, setRowCount }) => {
+    const [activeSelector, setActiveSelector] = useState(null); // 'min' | 'max' | 'total' | 'rows' | null
     const lengths = [5, 6, 7, 8, 9, 10, 11, 12];
     const totalOptions = [120, 130, 140];
+    const rowOptions = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 
     const handleSelect = (val) => {
         if (activeSelector === 'min') {
@@ -13,6 +14,8 @@ const ConditionPanel = ({ minDigit, maxDigit, setMinDigit, setMaxDigit, targetTo
             setMaxDigit(Math.max(val, minDigit));
         } else if (activeSelector === 'total') {
             setTargetTotalDigits(val);
+        } else if (activeSelector === 'rows') {
+            setRowCount(val);
         }
         setActiveSelector(null);
     };
@@ -39,7 +42,24 @@ const ConditionPanel = ({ minDigit, maxDigit, setMinDigit, setMaxDigit, targetTo
                         )}
                     </div>
                 </div>
-                <div className="condition-item">口数: 20</div>
+                <div className="condition-item">
+                    <span className="label">口数:</span>
+                    <div className="picker-wrapper">
+                        <button
+                            className={`picker-btn ${activeSelector === 'rows' ? 'active' : ''}`}
+                            onClick={() => setActiveSelector(activeSelector === 'rows' ? null : 'rows')}
+                        >
+                            {rowCount}
+                        </button>
+                        {activeSelector === 'rows' && (
+                            <div className="picker-popover">
+                                {rowOptions.map(r => (
+                                    <button key={r} onClick={() => handleSelect(r)}>{r}</button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
                 <div className="condition-item">
                     <span className="label">ケタ範囲:</span>
                     <div className="range-picker">
@@ -76,8 +96,6 @@ const ConditionPanel = ({ minDigit, maxDigit, setMinDigit, setMaxDigit, targetTo
                         </div>
                     </div>
                 </div>
-                <div className="condition-item">総字数: -</div>
-                <div className="condition-item">口数: 20</div>
                 <div className="condition-item">＋１文字: -</div>
                 <div className="condition-item">－１文字: -</div>
                 <div className="condition-item">囲み文字: -</div>
