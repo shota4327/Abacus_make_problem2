@@ -8,10 +8,11 @@ const ProblemGrid = ({ grid, updateDigit, totalSum, generateRandomGrid }) => {
         setActiveCell({ row, col });
     };
 
-    const handleDigitSelect = (value) => {
+    const handleDigitSelect = (value, e) => {
+        e.stopPropagation();
         if (activeCell) {
             updateDigit(activeCell.row, activeCell.col, value);
-            setActiveCell(null); // Close popover/input logic
+            setActiveCell(null);
         }
     };
 
@@ -27,14 +28,51 @@ const ProblemGrid = ({ grid, updateDigit, totalSum, generateRandomGrid }) => {
                             <span className="row-number">{rowIndex + 1}</span>
                             {row.map((digit, colIndex) => {
                                 const isLeading = firstNonZeroIndex === -1 || colIndex < firstNonZeroIndex;
+                                const isActive = activeCell?.row === rowIndex && activeCell?.col === colIndex;
                                 return (
-                                    <button
-                                        key={colIndex}
-                                        className={`digit-btn ${activeCell?.row === rowIndex && activeCell?.col === colIndex ? 'active' : ''}`}
-                                        onClick={() => handleCellClick(rowIndex, colIndex)}
-                                    >
-                                        {isLeading ? '' : (digit ?? 0)}
-                                    </button>
+                                    <div key={colIndex} className="digit-btn-wrapper">
+                                        <button
+                                            className={`digit-btn ${isActive ? 'active' : ''}`}
+                                            onClick={() => handleCellClick(rowIndex, colIndex)}
+                                        >
+                                            {isLeading ? '' : (digit ?? 0)}
+                                        </button>
+                                        {isActive && (
+                                            <>
+                                                <div className="selector-backdrop" onClick={() => setActiveCell(null)} />
+                                                {(() => {
+                                                    // Calculate minimal shift to keep 182px popover inside ~270px area
+                                                    // rowNumber(25) + margin(5) + 12cols(20*12) = 270px
+                                                    const colStart = 30 + colIndex * 20;
+                                                    const colCenter = colStart + 10;
+                                                    const safetyBuffer = 1;
+                                                    const halfPop = 92 + safetyBuffer; // popWidth/2 + margin
+                                                    const areaWidth = 270;
+
+                                                    let shift = 0;
+                                                    if (colCenter < halfPop) {
+                                                        shift = halfPop - colCenter;
+                                                    } else if (colCenter > (areaWidth - halfPop)) {
+                                                        shift = (areaWidth - halfPop) - colCenter;
+                                                    }
+
+                                                    return (
+                                                        <div
+                                                            className="digit-selector"
+                                                            style={{
+                                                                left: '50%',
+                                                                transform: `translateX(calc(-50% + ${shift}px))`
+                                                            }}
+                                                        >
+                                                            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                                                                <button key={num} onClick={(e) => handleDigitSelect(num, e)}>{num}</button>
+                                                            ))}
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </>
+                                        )}
+                                    </div>
                                 );
                             })}
                         </div>
@@ -51,16 +89,6 @@ const ProblemGrid = ({ grid, updateDigit, totalSum, generateRandomGrid }) => {
                     再生成
                 </button>
             </div>
-
-            {activeCell && (
-                <div className="digit-selector-overlay" onClick={() => setActiveCell(null)}>
-                    <div className="digit-selector" onClick={e => e.stopPropagation()}>
-                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                            <button key={num} onClick={() => handleDigitSelect(num)}>{num}</button>
-                        ))}
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
