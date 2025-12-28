@@ -1,0 +1,17 @@
+.condition-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.condition-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    overflow-y: auto;
+}
+
+.condition-item {
+    padding-bottom: 4px;
+    border-bottom: 1px solid #f1f5f9;
+}

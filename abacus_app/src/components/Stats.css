@@ -1,0 +1,90 @@
+.stats-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.frequency-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+    font-family: monospace;
+    font-size: 0.9rem;
+    border-bottom: 1px dashed #f1f5f9;
+}
+
+.stat-row.compact {
+    font-size: 0.8rem;
+}
+
+.stat-label {
+    color: #64748b;
+}
+
+.stat-value {
+    font-weight: bold;
+}
+
+.stat-value.warn,
+td.warn {
+    color: var(--danger-color);
+    font-weight: bold;
+    background-color: #fee2e2;
+}
+
+.consecutive-list {
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Frequency Table Styles */
+.frequency-table-container {
+    overflow: auto;
+    flex: 1;
+}
+
+.frequency-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.frequency-table th {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
+    border-bottom: 1px solid var(--border-color);
+    padding: 2px;
+    width: 20px;
+    /* Match ProblemGrid button width */
+    min-width: 20px;
+    box-sizing: border-box;
+}
+
+.frequency-table td {
+    padding: 2px;
+    border-bottom: 1px solid #f1f5f9;
+    width: 20px;
+    /* Match ProblemGrid button width */
+    min-width: 20px;
+    height: 30px;
+    /* Match ProblemGrid row height */
+    box-sizing: border-box;
+}
+
+.frequency-table tr {
+    height: 30px;
+}
+
+.frequency-table .row-label {
+    color: #64748b;
+    font-size: 0.7rem;
+    border-right: 1px solid #f1f5f9;
+}

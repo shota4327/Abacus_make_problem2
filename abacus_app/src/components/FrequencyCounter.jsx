@@ -1,0 +1,36 @@
+import React from 'react';
+import './Stats.css';
+
+const FrequencyCounter = ({ frequency }) => {
+    return (
+        <div className="panel stats-panel">
+            <h2>出現回数</h2>
+            <div className="frequency-table-container">
+                <table className="frequency-table">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                                <th key={num}>{num}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {frequency.map((rowFreq, rowIndex) => (
+                            <tr key={rowIndex}>
+                                <td className="row-label">{rowIndex + 1}</td>
+                                {rowFreq.map((count, num) => (
+                                    <td key={num} className={count >= 3 ? 'warn' : ''}>
+                                        {count > 0 ? count : ''}
+                                    </td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
+export default FrequencyCounter;
