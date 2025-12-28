@@ -17,7 +17,7 @@ body {
 
 .app-container {
   display: grid;
-  grid-template-columns: auto 120px 320px 320px 1fr;
+  grid-template-columns: auto 120px 320px 350px 1fr;
   gap: 1rem;
   padding: 1rem;
   height: 100vh;

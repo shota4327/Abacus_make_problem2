@@ -37,6 +37,16 @@ td.warn {
     background-color: #fee2e2;
 }
 
+td.diagonal {
+    background-color: #ffedd5;
+    /* Light orange */
+}
+
+td.diagonal.warn {
+    background-color: #fdba74;
+    /* Darker orange for warning in diagonal */
+}
+
 .consecutive-list {
     overflow-y: auto;
     flex: 1;
@@ -61,9 +71,10 @@ td.warn {
     background: white;
     z-index: 1;
     border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    /* Added vertical border */
     padding: 2px;
     width: 20px;
-    /* Match ProblemGrid button width */
     min-width: 20px;
     box-sizing: border-box;
 }
@@ -71,11 +82,11 @@ td.warn {
 .frequency-table td {
     padding: 2px;
     border-bottom: 1px solid #f1f5f9;
+    border-right: 1px solid #f1f5f9;
+    /* Added vertical border */
     width: 20px;
-    /* Match ProblemGrid button width */
     min-width: 20px;
     height: 30px;
-    /* Match ProblemGrid row height */
     box-sizing: border-box;
 }
 
@@ -87,4 +98,82 @@ td.warn {
     color: #64748b;
     font-size: 0.7rem;
     border-right: 1px solid #f1f5f9;
+}
+
+/* Consecutive Counter specific */
+.consecutive-wrapper {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    /* Gap restored */
+    flex: 1;
+    overflow: hidden;
+}
+
+.vertical-label-container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 170px;
+    /* Land in the middle of rows 3-6, shifted 1 row down */
+}
+
+.vertical-text {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    letter-spacing: 0.2rem;
+}
+
+.table-content-vertical {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+.horizontal-label-container {
+    text-align: center;
+    padding-left: 20px;
+    /* Offset for row labels */
+    margin-bottom: 4px;
+}
+
+.axis-label {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: bold;
+}
+
+.frequency-table .corner {
+    width: 20px;
+    height: 30px;
+    position: sticky;
+    top: 0;
+    left: 0;
+    background: white;
+    z-index: 2;
+}
+
+.consecutive-table {
+    table-layout: fixed;
+    width: 286px !important;
+    /* Wide enough (11 cols * 26px) */
+    margin: 0;
+}
+
+.consecutive-table th,
+.consecutive-table td {
+    width: 26px !important;
+    min-width: 26px !important;
+    max-width: 26px !important;
+    padding: 1px !important;
+}
+
+.consecutive-table .row-label {
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 1;
+    width: 26px !important;
+    min-width: 26px !important;
 }
