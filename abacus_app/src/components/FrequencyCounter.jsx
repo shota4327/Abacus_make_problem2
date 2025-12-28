@@ -11,7 +11,7 @@ const FrequencyCounter = ({ frequency }) => {
                         <tr>
                             <th>No</th>
                             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                                <th key={num}>{num}</th>
+                                <th key={num} className={num % 2 !== 0 ? 'highlight-orange-light' : ''}>{num}</th>
                             ))}
                         </tr>
                     </thead>
@@ -20,7 +20,7 @@ const FrequencyCounter = ({ frequency }) => {
                             <tr key={rowIndex}>
                                 <td className="row-label">{rowIndex + 1}</td>
                                 {rowFreq.map((count, num) => (
-                                    <td key={num} className={count >= 3 ? 'warn' : ''}>
+                                    <td key={num} className={`${count >= 3 ? 'warn' : ''} ${num % 2 !== 0 ? 'highlight-orange-light' : ''}`}>
                                         {count > 0 ? count : ''}
                                     </td>
                                 ))}

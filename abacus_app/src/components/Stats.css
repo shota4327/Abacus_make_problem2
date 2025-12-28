@@ -37,14 +37,20 @@ td.warn {
     background-color: #fee2e2;
 }
 
-td.diagonal {
-    background-color: #ffedd5;
+.highlight-orange {
+    background-color: #ffedd5 !important;
     /* Light orange */
 }
 
-td.diagonal.warn {
-    background-color: #fdba74;
-    /* Darker orange for warning in diagonal */
+.highlight-orange-light {
+    background-color: #fff7ed !important;
+    /* Even lighter orange */
+}
+
+.highlight-orange.warn,
+.highlight-orange-light.warn {
+    background-color: #fdba74 !important;
+    /* Darker orange for warning */
 }
 
 .consecutive-list {

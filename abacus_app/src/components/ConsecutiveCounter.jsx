@@ -34,7 +34,7 @@ const ConsecutiveCounter = ({ consecutive }) => {
                                             return (
                                                 <td
                                                     key={`${d1}-${d2}`}
-                                                    className={`${count >= 3 ? 'warn' : ''} ${d1 === d2 ? 'diagonal' : ''}`}
+                                                    className={`${count >= 3 ? 'warn' : ''} ${d1 === d2 ? 'highlight-orange' : ''}`}
                                                 >
                                                     {count > 0 ? count : ''}
                                                 </td>
