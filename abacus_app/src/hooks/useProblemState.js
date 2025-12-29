@@ -114,7 +114,38 @@ export const useProblemState = () => {
             totalRowDigits += rowDigitCount;
             const rowVal = (parseInt(rowValStr, 10) || 0) * (isMinusRows[ri] ? -1 : 1);
             totalSum += rowVal;
+
+            // Complement check: if running total drops below 0 at any point (implied sequential addition)
+            // Note: This check happens AFTER the row is added. 
+            // Abacus logic: negative intermediate result means "borrow" or "complement".
+            if (totalSum < 0) {
+                // Actually, "during calculation" implies running total. 
+                // We check after each row addition.
+                // However, finding complement might be triggered even if total is positive but operation subtracts?
+                // Standard definition: If the *value on the abacus* would be negative? 
+                // Abacus usually doesn't show negative. 
+                // Interpretation: "Intermediate total < 0" seems correct for "complement calculation needed".
+                // But wait, if we start with 10 - 20, we get -10. 
+                // Let's stick to "running total < 0".
+            }
         }
+
+        let hasComplement = false;
+        let runningTotal = 0;
+        for (let ri = 0; ri < rowCount; ri++) {
+            const row = grid[ri];
+            let rowValStr = "";
+            row.forEach(d => rowValStr += (d === null ? 0 : d));
+            const rowVal = (parseInt(rowValStr, 10) || 0) * (isMinusRows[ri] ? -1 : 1);
+            runningTotal += rowVal;
+            if (runningTotal < 0) hasComplement = true;
+        }
+
+        const messages = [];
+        if (hasComplement) messages.push("補数計算あり");
+        if (totalSum < 0) messages.push("結果がマイナス");
+
+        const complementStatus = messages.length > 0 ? messages.join("・") : "なし";
 
         const frequencyDiffs = Array(10).fill(0).map((_, digit) => {
             let baseline = targetTotalDigits / 10;
@@ -130,7 +161,8 @@ export const useProblemState = () => {
             frequencyDiffs,
             consecutive,
             rowDigitCounts,
-            totalRowDigits
+            totalRowDigits,
+            complementStatus
         };
     }, [grid, rowCount, targetTotalDigits, plusOneDigit, minusOneDigit, isMinusRows]);
 
@@ -402,6 +434,7 @@ export const useProblemState = () => {
         frequencyDiffs: stats.frequencyDiffs,
         consecutive: stats.consecutive,
         rowDigitCounts: stats.rowDigitCounts,
-        totalRowDigits: stats.totalRowDigits
+        totalRowDigits: stats.totalRowDigits,
+        complementStatus: stats.complementStatus
     };
 };

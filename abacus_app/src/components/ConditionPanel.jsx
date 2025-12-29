@@ -15,7 +15,9 @@ const ConditionPanel = ({
     lastRowMin, setLastRowMin,
     lastRowMax, setLastRowMax,
     answerMin, setAnswerMin,
-    answerMax, setAnswerMax
+    answerMax, setAnswerMax,
+    hasMinus,
+    complementStatus
 }) => {
     const [activeSelector, setActiveSelector] = useState(null);
     const lengths = [5, 6, 7, 8, 9, 10, 11, 12];
@@ -176,7 +178,7 @@ const ConditionPanel = ({
                     {renderDigitSelector('consecutive', consecutiveDigit)}
                 </div>
 
-                <div className="condition-item">マイナス: -</div>
+
                 <div className="condition-item">
                     <span className="label">１口目:</span>
                     {renderRangeDigitSelector('firstMin', firstRowMin, 'firstMax', firstRowMax)}
@@ -188,6 +190,18 @@ const ConditionPanel = ({
                 <div className="condition-item">
                     <span className="label">答え:</span>
                     {renderRangeDigitSelector('ansMin', answerMin, 'ansMax', answerMax)}
+                </div>
+                <div className="condition-item">
+                    <span className="label">マイナス:</span>
+                    <span style={{ fontWeight: 'bold' }}>
+                        {hasMinus ? 'あり' : 'なし'}
+                    </span>
+                </div>
+                <div className="condition-item">
+                    <span className="label">補数計算:</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>
+                        {complementStatus}
+                    </span>
                 </div>
             </div>
         </div>
