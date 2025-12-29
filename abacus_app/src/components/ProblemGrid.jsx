@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './ProblemGrid.css';
 
-const ProblemGrid = ({ grid, updateDigit, totalSum, generateRandomGrid }) => {
+const ProblemGrid = ({ grid, updateDigit, isMinusRows, toggleRowMinus, totalSum, generateRandomGrid }) => {
     const [activeCell, setActiveCell] = useState(null); // {row, col}
 
     const handleCellClick = (row, col) => {
@@ -23,17 +23,27 @@ const ProblemGrid = ({ grid, updateDigit, totalSum, generateRandomGrid }) => {
                 <div className="grid-header-spacer"></div>
                 {grid.map((row, rowIndex) => {
                     const firstNonZeroIndex = row.findIndex(d => d !== null && d !== 0);
+                    const isMinus = isMinusRows?.[rowIndex];
                     return (
-                        <div key={rowIndex} className="grid-row">
+                        <div key={rowIndex} className={`grid-row ${isMinus ? 'minus-row' : ''}`}>
                             <span className="row-number">{rowIndex + 1}</span>
+                            <button
+                                className={`minus-toggle ${isMinus ? 'active' : ''}`}
+                                onClick={() => toggleRowMinus(rowIndex)}
+                                title="正負切り替え"
+                            >
+                                {isMinus ? '－' : ''}
+                            </button>
                             {row.map((digit, colIndex) => {
-                                const isLeading = firstNonZeroIndex === -1 || colIndex < firstNonZeroIndex;
+                                const isLeading = colIndex === 0 ? true : (firstNonZeroIndex === -1 || colIndex < firstNonZeroIndex);
                                 const isActive = activeCell?.row === rowIndex && activeCell?.col === colIndex;
                                 return (
                                     <div key={colIndex} className="digit-btn-wrapper">
                                         <button
                                             className={`digit-btn ${isActive ? 'active' : ''}`}
                                             onClick={() => handleCellClick(rowIndex, colIndex)}
+                                            disabled={colIndex === 0}
+                                            style={colIndex === 0 ? { visibility: 'hidden', pointerEvents: 'none' } : {}}
                                         >
                                             {isLeading ? '' : (digit ?? 0)}
                                         </button>
@@ -41,13 +51,12 @@ const ProblemGrid = ({ grid, updateDigit, totalSum, generateRandomGrid }) => {
                                             <>
                                                 <div className="selector-backdrop" onClick={() => setActiveCell(null)} />
                                                 {(() => {
-                                                    // Calculate minimal shift to keep 182px popover inside ~270px area
-                                                    // rowNumber(25) + margin(5) + 12cols(20*12) = 270px
-                                                    const colStart = 30 + colIndex * 20;
+                                                    // rowNumber(25) + minus-toggle(20) + margin + 13cols(20*13)
+                                                    const colStart = 50 + colIndex * 20;
                                                     const colCenter = colStart + 10;
                                                     const safetyBuffer = 1;
-                                                    const halfPop = 92 + safetyBuffer; // popWidth/2 + margin
-                                                    const areaWidth = 270;
+                                                    const halfPop = 92 + safetyBuffer;
+                                                    const areaWidth = 330;
 
                                                     let shift = 0;
                                                     if (colCenter < halfPop) {
@@ -78,9 +87,49 @@ const ProblemGrid = ({ grid, updateDigit, totalSum, generateRandomGrid }) => {
                         </div>
                     );
                 })}
-                <div className="total-row">
-                    <span>合計:</span>
-                    <span>{totalSum.toLocaleString()}</span>
+                <div className="total-row grid-row">
+                    <span className="row-number">合計</span>
+                    {(() => {
+                        const absSum = Math.abs(totalSum);
+                        const isSumMinus = totalSum < 0;
+                        const sumStr = absSum.toString();
+                        const sumDigits = sumStr.split('').map(Number);
+                        // Sign index logic
+                        const signIndex = 13 - sumDigits.length - 1;
+                        const showSignLeft = isSumMinus && signIndex < 0;
+
+                        return (
+                            <>
+                                <div className="minus-toggle-placeholder" id="total-minus-placeholder">
+                                    {showSignLeft && (
+                                        <span className="minus-text" style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>－</span>
+                                    )}
+                                </div>
+                                {(() => {
+                                    const paddedSum = Array(13).fill(null);
+
+                                    // Right-align sum digits into the 13-column grid
+                                    for (let i = 0; i < sumDigits.length; i++) {
+                                        const gridIdx = 13 - sumDigits.length + i;
+                                        if (gridIdx >= 0 && gridIdx < 13) {
+                                            paddedSum[gridIdx] = sumDigits[i];
+                                        }
+                                    }
+
+                                    return paddedSum.map((digit, colIndex) => {
+                                        const showSignGrid = isSumMinus && colIndex === signIndex;
+                                        return (
+                                            <div key={colIndex} className="digit-btn-wrapper">
+                                                <span className={`total-digit-val ${isSumMinus ? 'minus-text' : ''}`}>
+                                                    {showSignGrid ? '－' : (digit !== null ? digit : '')}
+                                                </span>
+                                            </div>
+                                        );
+                                    });
+                                })()}
+                            </>
+                        );
+                    })()}
                 </div>
             </div>
 

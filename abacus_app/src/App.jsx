@@ -32,7 +32,8 @@ function App() {
     minusOneDigit, setMinusOneDigit,
     enclosedDigit, setEnclosedDigit,
     sandwichedDigit, setSandwichedDigit,
-    consecutiveDigit, setConsecutiveDigit
+    consecutiveDigit, setConsecutiveDigit,
+    isMinusRows, toggleRowMinus
   } = useProblemState();
 
   return (
@@ -40,6 +41,8 @@ function App() {
       <ProblemGrid
         grid={grid}
         updateDigit={updateDigit}
+        isMinusRows={isMinusRows}
+        toggleRowMinus={toggleRowMinus}
         totalSum={totalSum}
         generateRandomGrid={generateRandomGrid}
       />

@@ -1,15 +1,16 @@
 import { useState, useMemo, useCallback } from 'react';
 
 const ROW_COUNT = 20;
-const COL_COUNT = 12;
+const COL_COUNT = 13;
 
-// Helper to create initial grid (20 rows x 12 cols, initialized to 0)
+// Helper to create initial grid (20 rows x 13 cols, initialized to 0)
 const createInitialGrid = () => {
     return Array(ROW_COUNT).fill(null).map(() => Array(COL_COUNT).fill(0));
 };
 
 export const useProblemState = () => {
     const [grid, setGrid] = useState(createInitialGrid);
+    const [isMinusRows, setIsMinusRows] = useState(Array(ROW_COUNT).fill(false));
     const [minDigit, setMinDigit] = useState(5);
     const [maxDigit, setMaxDigit] = useState(12);
     const [targetTotalDigits, setTargetTotalDigits] = useState(130);
@@ -28,6 +29,15 @@ export const useProblemState = () => {
             const newGrid = prevGrid.map(row => [...row]);
             newGrid[rowIndex][colIndex] = value;
             return newGrid;
+        });
+    }, []);
+
+    // Toggle row minus sign
+    const toggleRowMinus = useCallback((rowIndex) => {
+        setIsMinusRows(prev => {
+            const next = [...prev];
+            next[rowIndex] = !next[rowIndex];
+            return next;
         });
     }, []);
 
@@ -94,7 +104,8 @@ export const useProblemState = () => {
             frequency.push(rowFreq);
             rowDigitCounts.push(rowDigitCount);
             totalRowDigits += rowDigitCount;
-            totalSum += parseInt(rowValStr, 10) || 0;
+            const rowVal = (parseInt(rowValStr, 10) || 0) * (isMinusRows[ri] ? -1 : 1);
+            totalSum += rowVal;
         }
 
         const frequencyDiffs = Array(10).fill(0).map((_, digit) => {
@@ -113,7 +124,7 @@ export const useProblemState = () => {
             rowDigitCounts,
             totalRowDigits
         };
-    }, [grid, rowCount, targetTotalDigits, plusOneDigit, minusOneDigit]);
+    }, [grid, rowCount, targetTotalDigits, plusOneDigit, minusOneDigit, isMinusRows]);
 
     const generateRandomGrid = useCallback(() => {
         const n = rowCount;
@@ -194,6 +205,8 @@ export const useProblemState = () => {
         maxDigit,
         targetTotalDigits,
         rowCount,
+        isMinusRows,
+        toggleRowMinus,
         setMinDigit,
         setMaxDigit,
         setTargetTotalDigits,
