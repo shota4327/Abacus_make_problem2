@@ -116,6 +116,11 @@
     color: white;
 }
 
+.digit-btn.highlight-same {
+    background-color: #ffedd5;
+    /* Slightly darker orange */
+}
+
 .total-row {
     margin-top: 1rem;
     font-weight: bold;

@@ -37,10 +37,29 @@ const ProblemGrid = ({ grid, updateDigit, isMinusRows, toggleRowMinus, totalSum,
                             {row.map((digit, colIndex) => {
                                 const isLeading = colIndex === 0 ? true : (firstNonZeroIndex === -1 || colIndex < firstNonZeroIndex);
                                 const isActive = activeCell?.row === rowIndex && activeCell?.col === colIndex;
+
+                                // Highlighting logic
+                                let highlighted = false;
+                                if (colIndex > 0 && !isLeading) {
+                                    const d = row[colIndex];
+                                    // Adjacent: d1 == d2
+                                    const hasAdjLeft = colIndex > 1 && d === row[colIndex - 1];
+                                    const hasAdjRight = colIndex < 12 && d === row[colIndex + 1];
+
+                                    // One-gap: d1 == d3 (highlight d1, d2, d3)
+                                    const hasGapLeft = colIndex > 2 && d === row[colIndex - 2];
+                                    const hasGapRight = colIndex < 11 && d === row[colIndex + 2];
+                                    const isGapMiddle = colIndex > 1 && colIndex < 12 && row[colIndex - 1] === row[colIndex + 1];
+
+                                    if (hasAdjLeft || hasAdjRight || hasGapLeft || hasGapRight || isGapMiddle) {
+                                        highlighted = true;
+                                    }
+                                }
+
                                 return (
                                     <div key={colIndex} className="digit-btn-wrapper">
                                         <button
-                                            className={`digit-btn ${isActive ? 'active' : ''}`}
+                                            className={`digit-btn ${isActive ? 'active' : ''} ${highlighted ? 'highlight-same' : ''}`}
                                             onClick={() => handleCellClick(rowIndex, colIndex)}
                                             disabled={colIndex === 0}
                                             style={colIndex === 0 ? { visibility: 'hidden', pointerEvents: 'none' } : {}}
