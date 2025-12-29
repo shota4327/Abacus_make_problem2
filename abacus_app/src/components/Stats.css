@@ -196,7 +196,7 @@ td.warn {
 }
 
 .frequency-table .corner {
-    width: 20px;
+    width: 32px;
     height: 30px;
     position: sticky;
     top: 0;
@@ -207,17 +207,16 @@ td.warn {
 
 .consecutive-table {
     table-layout: fixed;
-    width: 286px !important;
-    /* Wide enough (11 cols * 26px) */
+    width: auto !important;
     margin: 0;
 }
 
 .consecutive-table th,
 .consecutive-table td {
-    width: 26px !important;
-    min-width: 26px !important;
-    max-width: 26px !important;
-    padding: 1px !important;
+    width: 32px !important;
+    min-width: 32px !important;
+    max-width: 32px !important;
+    padding: 2px !important;
 }
 
 .consecutive-table .row-label {
@@ -225,6 +224,8 @@ td.warn {
     left: 0;
     background: white;
     z-index: 1;
-    width: 26px !important;
-    min-width: 26px !important;
+    width: 32px !important;
+    min-width: 32px !important;
+    font-size: 1rem;
+    color: var(--text-color);
 }

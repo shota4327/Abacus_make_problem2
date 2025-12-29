@@ -19,7 +19,7 @@ const ConsecutiveCounter = ({ consecutive }) => {
                         <table className="frequency-table consecutive-table">
                             <thead>
                                 <tr>
-                                    <th className="corner"></th>
+                                    <th className="corner" style={{ width: '32px' }}></th>
                                     {digits.map(d1 => (
                                         <th key={`h-${d1}`}>{d1}</th>
                                     ))}
