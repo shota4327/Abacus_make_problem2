@@ -33,7 +33,13 @@ function App() {
     enclosedDigit, setEnclosedDigit,
     sandwichedDigit, setSandwichedDigit,
     consecutiveDigit, setConsecutiveDigit,
-    isMinusRows, toggleRowMinus
+    isMinusRows, toggleRowMinus,
+    firstRowMin, setFirstRowMin,
+    firstRowMax, setFirstRowMax,
+    lastRowMin, setLastRowMin,
+    lastRowMax, setLastRowMax,
+    answerMin, setAnswerMin,
+    answerMax, setAnswerMax
   } = useProblemState();
 
   return (
@@ -76,6 +82,18 @@ function App() {
         setSandwichedDigit={setSandwichedDigit}
         consecutiveDigit={consecutiveDigit}
         setConsecutiveDigit={setConsecutiveDigit}
+        firstRowMin={firstRowMin}
+        setFirstRowMin={setFirstRowMin}
+        firstRowMax={firstRowMax}
+        setFirstRowMax={setFirstRowMax}
+        lastRowMin={lastRowMin}
+        setLastRowMin={setLastRowMin}
+        lastRowMax={lastRowMax}
+        setLastRowMax={setLastRowMax}
+        answerMin={answerMin}
+        setAnswerMin={setAnswerMin}
+        answerMax={answerMax}
+        setAnswerMax={setAnswerMax}
       />
     </div>
   );

@@ -9,7 +9,13 @@ const ConditionPanel = ({
     minusOneDigit, setMinusOneDigit,
     enclosedDigit, setEnclosedDigit,
     sandwichedDigit, setSandwichedDigit,
-    consecutiveDigit, setConsecutiveDigit
+    consecutiveDigit, setConsecutiveDigit,
+    firstRowMin, setFirstRowMin,
+    firstRowMax, setFirstRowMax,
+    lastRowMin, setLastRowMin,
+    lastRowMax, setLastRowMax,
+    answerMin, setAnswerMin,
+    answerMax, setAnswerMax
 }) => {
     const [activeSelector, setActiveSelector] = useState(null);
     const lengths = [5, 6, 7, 8, 9, 10, 11, 12];
@@ -27,26 +33,48 @@ const ConditionPanel = ({
         else if (activeSelector === 'enclosed') setEnclosedDigit(val);
         else if (activeSelector === 'sandwiched') setSandwichedDigit(val);
         else if (activeSelector === 'consecutive') setConsecutiveDigit(val);
+        else if (activeSelector === 'firstMin') setFirstRowMin(val);
+        else if (activeSelector === 'firstMax') setFirstRowMax(val);
+        else if (activeSelector === 'lastMin') setLastRowMin(val);
+        else if (activeSelector === 'lastMax') setLastRowMax(val);
+        else if (activeSelector === 'ansMin') setAnswerMin(val);
+        else if (activeSelector === 'ansMax') setAnswerMax(val);
         setActiveSelector(null);
     };
 
-    const renderDigitSelector = (type, currentVal) => (
-        <div className="picker-wrapper">
-            <button
-                className={`picker-btn ${activeSelector === type ? 'active' : ''}`}
-                onClick={() => setActiveSelector(activeSelector === type ? null : type)}
-            >
-                {currentVal}
-            </button>
-            {activeSelector === type && (
-                <div className="picker-popover">
-                    {digitOptions.map((d, i) => (
-                        <button key={i} onClick={() => handleSelect(d)}>
-                            {d}
-                        </button>
-                    ))}
-                </div>
-            )}
+    const renderDigitSelector = (type, currentVal) => {
+        // Types that allow "null" (displayed as "-")
+        const isNullable = ['firstMin', 'firstMax', 'lastMin', 'lastMax', 'ansMin', 'ansMax'].includes(type);
+
+        return (
+            <div className="picker-wrapper">
+                <button
+                    className={`picker-btn ${activeSelector === type ? 'active' : ''}`}
+                    onClick={() => setActiveSelector(activeSelector === type ? null : type)}
+                >
+                    {currentVal === null ? '-' : currentVal}
+                </button>
+                {activeSelector === type && (
+                    <div className="picker-popover">
+                        {isNullable && (
+                            <button onClick={() => handleSelect(null)}>-</button>
+                        )}
+                        {digitOptions.map((d, i) => (
+                            <button key={i} onClick={() => handleSelect(d)}>
+                                {d}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const renderRangeDigitSelector = (minType, minVal, maxType, maxVal) => (
+        <div className="range-picker">
+            {renderDigitSelector(minType, minVal)}
+            <span className="separator">ー</span>
+            {renderDigitSelector(maxType, maxVal)}
         </div>
     );
 
@@ -149,9 +177,18 @@ const ConditionPanel = ({
                 </div>
 
                 <div className="condition-item">マイナス: -</div>
-                <div className="condition-item">１口目: -</div>
-                <div className="condition-item">最終口: -</div>
-                <div className="condition-item">答え: -</div>
+                <div className="condition-item">
+                    <span className="label">１口目:</span>
+                    {renderRangeDigitSelector('firstMin', firstRowMin, 'firstMax', firstRowMax)}
+                </div>
+                <div className="condition-item">
+                    <span className="label">最終口:</span>
+                    {renderRangeDigitSelector('lastMin', lastRowMin, 'lastMax', lastRowMax)}
+                </div>
+                <div className="condition-item">
+                    <span className="label">答え:</span>
+                    {renderRangeDigitSelector('ansMin', answerMin, 'ansMax', answerMax)}
+                </div>
             </div>
         </div>
     );
