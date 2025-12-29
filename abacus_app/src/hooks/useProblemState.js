@@ -291,8 +291,8 @@ export const useProblemState = () => {
         });
 
         // Loop for Frequency Balancing
-        const TARGET_DIFF_TOLERANCE = 2; // ±2
-        const MAX_ITERATIONS = 1000;
+        const TARGET_TIME_LIMIT = 2000; // 2 seconds
+        const startTime = performance.now();
 
         // Locked cells map (set of strings "r,c")
         const lockedCells = new Set();
@@ -308,30 +308,13 @@ export const useProblemState = () => {
             if (lastRowMax !== null) lockedCells.add(`${lastIdx},12`);
         }
 
-        // Lock Answer constraints logic rows? 
-        // No, answer constraints are applied AFTER this. 
-        // But wait, if answer constraints overwrite something, they might unbalance it.
-        // User accepts slight Unbalance for Answer consistency? 
-        // Or we should balance, then apply Answer, then maybe tweak?
-        // Let's stick to plan: Balance then Answer. 
-        // The answer logic modifies at most 1-2 digits, unlikely to shift balance > 2 unless very unlucky.
-
-        for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
-            // 1. Calculate current frequencies (1-9, plus 0 if needed? usually 0 is ignored for non-digits but here valid digit)
-            // Digits are 0-9.
+        while (performance.now() - startTime < TARGET_TIME_LIMIT) {
+            // 1. Calculate current frequencies
             const freqs = Array(10).fill(0);
             let totalD = 0;
             for (let r = 0; r < n; r++) {
                 for (let c = 0; c < COL_COUNT; c++) {
                     const val = newGrid[r][c];
-                    // Skip nulls. 
-                    // Should we count leading zeros? existing stats logic: `if (isLeading) return;`
-                    // Detailed verification: `stats` ignores leading zeros. We should too.
-                    // But wait, in `newGrid`, are leading zeros `0` or `null`?
-                    // `generateRandomRow` uses `null` for padding.
-                    // But generated numbers might have internal zeros.
-                    // `row[COL_COUNT - 1 - i] = val`.
-                    // So we only count non-nulls.
                     if (val !== null) {
                         freqs[val]++;
                         totalD++;
@@ -339,11 +322,13 @@ export const useProblemState = () => {
                 }
             }
 
-            // Goals
-            // We want each digit to be approx totalD / 10.
-            const avg = totalD / 10;
-            // Diff array
-            const diffs = freqs.map(f => f - avg);
+            // Goals: totalD / 10, adjusted by plusOne/minusOne
+            const diffs = freqs.map((f, digit) => {
+                let target = totalD / 10;
+                if (digit === plusOneDigit) target += 1;
+                if (digit === minusOneDigit) target -= 1;
+                return f - target;
+            });
 
             // Find worst offenders
             let maxOver = -Infinity;
@@ -356,25 +341,16 @@ export const useProblemState = () => {
                 if (d < maxUnder) { maxUnder = d; maxUnderDigit = i; }
             });
 
-            // Check convergence
-            // If all diffs are within ±2 (approx), we break.
-            // Actually user said: "0-9's excess/deficiency within -2 to +2".
-            // So if maxOver <= 2 and maxUnder >= -2, we are good.
-            if (maxOver <= 2 && maxUnder >= -2) break;
+            // Check convergence for "Perfect Balance"
+            if (maxOver < 1 && maxUnder > -1) break;
 
-            // Try to swap a maxOverDigit to maxUnderDigit
-            // Find a candidate cell
-            // iterate random rows/cols to find `newGrid[r][c] === maxOverDigit`
-            // avoiding lockedCells.
-            // avoiding converting MSD to 0.
-
+            // Attempt Swap
             const candidates = [];
             for (let r = 0; r < n; r++) {
                 for (let c = 0; c < COL_COUNT; c++) {
                     if (newGrid[r][c] === maxOverDigit) {
                         if (lockedCells.has(`${r},${c}`)) continue;
                         // Leading zero safety:
-                        // If maxUnderDigit (target) is 0, we cannot put it in MSD position.
                         if (maxUnderDigit === 0 && c === msdIndices[r]) continue;
 
                         candidates.push({ r, c });
@@ -383,14 +359,11 @@ export const useProblemState = () => {
             }
 
             if (candidates.length === 0) {
-                // No moves possible for this pair. 
-                // Could try secondary pair, but for simplicity/safety loop continues or we break to Avoid infinite?
-                // Might be stuck. Let's break locally or just try random swap? 
-                // Breaking loop if no candidates found seems safest to prevent infinite spin.
+                // If stuck, typically implies we can't improve further or constraint blocked.
                 break;
             }
 
-            // Pick random candidate
+            // Pick random candidate and swap
             const cand = candidates[Math.floor(Math.random() * candidates.length)];
             newGrid[cand.r][cand.c] = maxUnderDigit;
         }
@@ -517,7 +490,8 @@ export const useProblemState = () => {
 
         setGrid(newGrid);
     }, [minDigit, maxDigit, rowCount, targetTotalDigits, generateRandomRow,
-        firstRowMin, firstRowMax, lastRowMin, lastRowMax, answerMin, answerMax, isMinusRows]);
+        firstRowMin, firstRowMax, lastRowMin, lastRowMax, answerMin, answerMax, isMinusRows,
+        plusOneDigit, minusOneDigit]);
 
     return {
         grid: grid.slice(0, rowCount), // Only expose active rows
