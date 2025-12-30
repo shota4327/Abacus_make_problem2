@@ -431,6 +431,188 @@ export const useProblemState = () => {
         // Use bestGrid
         const FinalGrid = bestGrid ? bestGrid : createInitialGrid(); // Fallback
 
+        // --- 2.5 Consecutive Optimization (New) ---
+        // Target: Minimize consecutive pairs (d1->d2) appearing >= 3 times
+        const CONSECITVE_OPT_TIME = 2000;
+        const optStartTime = performance.now();
+
+        // Fix Scope Variables
+        const n = rowCount;
+
+        // Re-calculate locked cells for FinalGrid (since lockedCells was local to the generation loop)
+        const msdIndicesFinal = FinalGrid.map(row => {
+            let idx = row.findIndex(d => d !== null && d !== 0);
+            return idx === -1 ? 12 : idx;
+        });
+        const lockedCells = new Set();
+        if (n > 0) {
+            const msd = msdIndicesFinal[0];
+            if (firstRowMin !== null) {
+                lockedCells.add(`0,${msd}`);
+            }
+            if (firstRowMax !== null) {
+                lockedCells.add(`0,12`);
+            }
+        }
+        if (n > 1) {
+            const msd = msdIndicesFinal[n - 1];
+            if (lastRowMin !== null) {
+                lockedCells.add(`${n - 1},${msd}`);
+            }
+            if (lastRowMax !== null) {
+                lockedCells.add(`${n - 1},12`);
+            }
+        }
+
+        // Helper to check validity of a cell (same as countOrangeCells logic but for a specific cell)
+        const isSafeToPlace = (g, r, c, val) => {
+            // Check row constraints (leading zero)
+            if (val === 0) {
+                // Check if it becomes leading zero
+                // Find first non-null column index for this row
+                let firstAudit = 0;
+                while (firstAudit < 13 && g[r][firstAudit] === null) firstAudit++;
+                if (c === firstAudit) return false;
+            }
+
+            // Check adjacent and gap duplicates
+            // Adjacent
+            if (c > 1) { // Left
+                const left = g[r][c - 1];
+                if (left !== null && left === val) return false;
+            }
+            if (c < 12) { // Right
+                const right = g[r][c + 1];
+                if (right !== null && right === val) return false;
+            }
+            // Gap
+            if (c > 2) { // Left gap
+                const left2 = g[r][c - 2];
+                if (left2 !== null && left2 === val) return false;
+            }
+            if (c < 11) { // Right gap
+                const right2 = g[r][c + 2];
+                if (right2 !== null && right2 === val) return false;
+            }
+            return true;
+        };
+
+        while (performance.now() - optStartTime < CONSECITVE_OPT_TIME) {
+            // 1. Calculate current consecutive counts
+            const counts = Array(10).fill(null).map(() => Array(10).fill(0));
+            const badPairs = []; // {d1, d2, count}
+
+            for (let r = 0; r < n; r++) {
+                const row = FinalGrid[r];
+                for (let c = 0; c < COL_COUNT - 1; c++) {
+                    const d1 = row[c];
+                    const d2 = row[c + 1];
+                    if (d1 !== null && d2 !== null) {
+                        counts[d1][d2]++;
+                    }
+                }
+            }
+
+            let maxCount = 0;
+            for (let d1 = 0; d1 < 10; d1++) {
+                for (let d2 = 0; d2 < 10; d2++) {
+                    if (counts[d1][d2] >= 3) {
+                        badPairs.push({ d1, d2, count: counts[d1][d2] });
+                    }
+                    if (counts[d1][d2] > maxCount) maxCount = counts[d1][d2];
+                }
+            }
+
+            if (maxCount <= 2) break; // All pairs count <= 2. Success!
+
+            if (badPairs.length === 0) break; // Should be covered by maxCount check, but safety.
+
+            // Sort bad pairs by count desc
+            badPairs.sort((a, b) => b.count - a.count);
+            const targetPair = badPairs[0]; // {d1, d2}
+
+            // Find all instances of this pair
+            const instances = [];
+            for (let r = 0; r < n; r++) {
+                const row = FinalGrid[r];
+                for (let c = 0; c < COL_COUNT - 1; c++) {
+                    if (row[c] === targetPair.d1 && row[c + 1] === targetPair.d2) {
+                        // Check if locked
+                        if (lockedCells.has(`${r},${c}`) || lockedCells.has(`${r},${c + 1}`)) continue;
+                        instances.push({ r, c });
+                    }
+                }
+            }
+
+            if (instances.length === 0) break; // Can't fix remaining ones (locked)
+
+            // Pick a random instance to break
+            const inst = instances[Math.floor(Math.random() * instances.length)];
+            const { r, c } = inst;
+
+            let swapped = false;
+
+            // Limit attempts per loop
+            for (let attempt = 0; attempt < 50; attempt++) {
+                // Decide whether to swap d1 (index c) or d2 (index c+1)
+                const targetOffset = Math.random() < 0.5 ? 0 : 1;
+                const targetC = c + targetOffset; // The cell we want to change
+                const currentVal = FinalGrid[r][targetC];
+
+                // Pick random other cell (rr, rc)
+                const rr = Math.floor(Math.random() * n);
+                // Find valid columns in that row
+                const validCols = [];
+                for (let k = 0; k < 13; k++) if (FinalGrid[rr][k] !== null) validCols.push(k);
+                if (validCols.length === 0) continue;
+                const rc = validCols[Math.floor(Math.random() * validCols.length)];
+
+                // Avoid self-swap or swapping too close (simplicity)
+                if (r === rr && Math.abs(targetC - rc) <= 2) continue;
+                if (lockedCells.has(`${rr},${rc}`)) continue;
+
+                const otherVal = FinalGrid[rr][rc];
+                if (otherVal === currentVal) continue;
+
+                // Check validity of placing otherVal at (r, targetC)
+                if (!isSafeToPlace(FinalGrid, r, targetC, otherVal)) continue;
+
+                // Check validity of placing currentVal at (rr, rc)
+                if (!isSafeToPlace(FinalGrid, rr, rc, currentVal)) continue;
+
+                // Check Consecutive Impact (prevent creating NEW bad pairs)
+                let badImpact = false;
+
+                // Check neighbors of (r, targetC) with otherVal
+                if (targetC > 0) {
+                    const left = FinalGrid[r][targetC - 1];
+                    if (left !== null && counts[left][otherVal] >= 2) badImpact = true;
+                }
+                if (targetC < 12) {
+                    const right = FinalGrid[r][targetC + 1];
+                    if (right !== null && counts[otherVal][right] >= 2) badImpact = true;
+                }
+
+                // Check neighbors of (rr, rc) with currentVal
+                if (rc > 0) {
+                    const left = FinalGrid[rr][rc - 1];
+                    if (left !== null && counts[left][currentVal] >= 2) badImpact = true;
+                }
+                if (rc < 12) {
+                    const right = FinalGrid[rr][rc + 1];
+                    if (right !== null && counts[currentVal][right] >= 2) badImpact = true;
+                }
+
+                if (badImpact) continue;
+
+                // Apply Swap
+                FinalGrid[r][targetC] = otherVal;
+                FinalGrid[rr][rc] = currentVal;
+                swapped = true;
+                break;
+            }
+        }
+
         // --- 3. Answer Constraints ---
         const calculateSum = (g) => {
             let sum = 0;
