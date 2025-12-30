@@ -203,6 +203,59 @@ export const useProblemState = () => {
             }
         }
 
+        // Helper to check match (target=condition, actual=value in grid/sum)
+        const checkMatch = (target, actual) => {
+            if (target === null) return true;
+            return Number(target) === Number(actual);
+        };
+
+        // 1. First Row
+        const firstRow = grid[0];
+        // MSD: First non-null/non-zero digit? Or just first non-null?
+        // Typically MSD is the first digit from left that is present.
+        // Based on grid structure (0-12), usually digits are filled from right or left depending on implementation.
+        // Assuming standard representation where index 0 is high value or index 12 is low value?
+        // Actually, let's look at how numbers are rendered.
+        // Usually index 0..12. Let's find first non-null digit.
+        // WAIT: 'grid' contains strings or numbers? Earlier debugging showed strings like "0", "3", or empty.
+        // Let's assume we scan for the first valid digit for MSD.
+        // For LSD (Min position?), usually the last column (index 12 or 11?).
+        // Let's rely on standard logic:
+        // scan from 0 to 12. First found is MSD. Last found is LSD.
+        // NOTE: The UI calls them "Min" and "Max" but the prompt says 1口目 (First Row) & 最終口 (Last Row) & 答え (Answer).
+        // And confirms: "Min" is MSD, "Max" is LSD.
+
+        const getMsdLsd = (rowArr) => {
+            let msd = null;
+            let lsd = null;
+            for (let i = 0; i < rowArr.length; i++) {
+                const cell = rowArr[i];
+                if (cell !== null && cell !== "" && cell !== undefined) {
+                    if (msd === null) msd = cell;
+                    lsd = cell;
+                }
+            }
+            return { msd, lsd };
+        };
+
+        const { msd: firstRowMsd, lsd: firstRowLsd } = getMsdLsd(firstRow);
+
+        // 2. Last Row
+        const lastRow = grid[rowCount - 1];
+        const { msd: lastRowMsd, lsd: lastRowLsd } = getMsdLsd(lastRow);
+
+        // 3. Answer (Total Sum)
+        const sumStr = String(Math.abs(totalSum)); // handle negative logic if needed, usually check digit
+        const ansMsd = sumStr[0];
+        const ansLsd = sumStr[sumStr.length - 1];
+
+        const isFirstMinValid = checkMatch(firstRowMin, firstRowMsd);
+        const isFirstMaxValid = checkMatch(firstRowMax, firstRowLsd);
+        const isLastMinValid = checkMatch(lastRowMin, lastRowMsd);
+        const isLastMaxValid = checkMatch(lastRowMax, lastRowLsd);
+        const isAnsMinValid = checkMatch(answerMin, ansMsd);
+        const isAnsMaxValid = checkMatch(answerMax, ansLsd);
+
         return {
             totalSum,
             frequency,
@@ -214,9 +267,15 @@ export const useProblemState = () => {
             complementStatus,
             isEnclosedUsed,
             isSandwichedUsed,
-            isConsecutiveUsed
+            isConsecutiveUsed,
+            isFirstMinValid,
+            isFirstMaxValid,
+            isLastMinValid,
+            isLastMaxValid,
+            isAnsMinValid,
+            isAnsMaxValid
         };
-    }, [grid, rowCount, targetTotalDigits, plusOneDigit, minusOneDigit, isMinusRows, enclosedDigit, sandwichedDigit, consecutiveDigit]);
+    }, [grid, rowCount, targetTotalDigits, plusOneDigit, minusOneDigit, isMinusRows, enclosedDigit, sandwichedDigit, consecutiveDigit, firstRowMin, firstRowMax, lastRowMin, lastRowMax, answerMin, answerMax]);
 
     // Core Logic (Refactored from original generateRandomGrid)
     const generateRandomGridLogic = useCallback(() => {
@@ -778,6 +837,12 @@ export const useProblemState = () => {
         complementStatus: stats.complementStatus,
         isEnclosedUsed: stats.isEnclosedUsed,
         isSandwichedUsed: stats.isSandwichedUsed,
-        isConsecutiveUsed: stats.isConsecutiveUsed
+        isConsecutiveUsed: stats.isConsecutiveUsed,
+        isFirstMinValid: stats.isFirstMinValid,
+        isFirstMaxValid: stats.isFirstMaxValid,
+        isLastMinValid: stats.isLastMinValid,
+        isLastMaxValid: stats.isLastMaxValid,
+        isAnsMinValid: stats.isAnsMinValid,
+        isAnsMaxValid: stats.isAnsMaxValid
     };
 };

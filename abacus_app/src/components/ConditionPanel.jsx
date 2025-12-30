@@ -20,7 +20,13 @@ const ConditionPanel = ({
     complementStatus,
     isEnclosedUsed,
     isSandwichedUsed,
-    isConsecutiveUsed
+    isConsecutiveUsed,
+    isFirstMinValid,
+    isFirstMaxValid,
+    isLastMinValid,
+    isLastMaxValid,
+    isAnsMinValid,
+    isAnsMaxValid
 }) => {
     const [activeSelector, setActiveSelector] = useState(null);
     const lengths = [5, 6, 7, 8, 9, 10, 11, 12];
@@ -35,7 +41,13 @@ const ConditionPanel = ({
             if (activeSelector === 'min' || activeSelector === 'max') finalVal = getRandom(lengths);
             else if (activeSelector === 'total') finalVal = getRandom(totalOptions);
             else if (activeSelector === 'rows') finalVal = getRandom(rowOptions);
-            else finalVal = getRandom(digitOptions);
+            else {
+                let options = digitOptions;
+                if (['firstMin', 'lastMin', 'ansMin'].includes(activeSelector)) {
+                    options = digitOptions.filter(d => d !== 0);
+                }
+                finalVal = getRandom(options);
+            }
         }
 
         if (activeSelector === 'min') setMinDigit(Math.min(finalVal, maxDigit));
@@ -63,7 +75,13 @@ const ConditionPanel = ({
         const isWarn =
             (type === 'enclosed' && !isEnclosedUsed) ||
             (type === 'sandwiched' && !isSandwichedUsed) ||
-            (type === 'consecutive' && !isConsecutiveUsed);
+            (type === 'consecutive' && !isConsecutiveUsed) ||
+            (type === 'firstMin' && !isFirstMinValid) ||
+            (type === 'firstMax' && !isFirstMaxValid) ||
+            (type === 'lastMin' && !isLastMinValid) ||
+            (type === 'lastMax' && !isLastMaxValid) ||
+            (type === 'ansMin' && !isAnsMinValid) ||
+            (type === 'ansMax' && !isAnsMaxValid);
         return (
             <div className="picker-wrapper">
                 <button
@@ -80,11 +98,16 @@ const ConditionPanel = ({
                                 <button onClick={() => handleSelect(null)}>-</button>
                             )}
                             <button className="random-btn" onClick={() => handleSelect('R')}>R</button>
-                            {digitOptions.map((d, i) => (
-                                <button key={i} onClick={() => handleSelect(d)}>
-                                    {d}
-                                </button>
-                            ))}
+                            {digitOptions
+                                .filter(d => {
+                                    if (d === 0 && ['firstMin', 'lastMin', 'ansMin'].includes(type)) return false;
+                                    return true;
+                                })
+                                .map((d, i) => (
+                                    <button key={i} onClick={() => handleSelect(d)}>
+                                        {d}
+                                    </button>
+                                ))}
                         </div>
                     </>
                 )}

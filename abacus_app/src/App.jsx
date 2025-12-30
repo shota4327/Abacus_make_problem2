@@ -44,7 +44,13 @@ function App() {
     complementStatus,
     isEnclosedUsed,
     isSandwichedUsed,
-    isConsecutiveUsed
+    isConsecutiveUsed,
+    isFirstMinValid,
+    isFirstMaxValid,
+    isLastMinValid,
+    isLastMaxValid,
+    isAnsMinValid,
+    isAnsMaxValid
   } = useProblemState();
 
   const hasMinus = isMinusRows.some(Boolean);
@@ -113,6 +119,12 @@ function App() {
         isEnclosedUsed={isEnclosedUsed}
         isSandwichedUsed={isSandwichedUsed}
         isConsecutiveUsed={isConsecutiveUsed}
+        isFirstMinValid={isFirstMinValid}
+        isFirstMaxValid={isFirstMaxValid}
+        isLastMinValid={isLastMinValid}
+        isLastMaxValid={isLastMaxValid}
+        isAnsMinValid={isAnsMinValid}
+        isAnsMaxValid={isAnsMaxValid}
       />
     </div>
   );
