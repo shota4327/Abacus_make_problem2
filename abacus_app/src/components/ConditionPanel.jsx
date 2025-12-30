@@ -55,7 +55,7 @@ const ConditionPanel = ({
 
     const renderDigitSelector = (type, currentVal) => {
         // Types that allow "null" (displayed as "-")
-        const isNullable = ['firstMin', 'firstMax', 'lastMin', 'lastMax', 'ansMin', 'ansMax'].includes(type);
+        const isNullable = ['firstMin', 'firstMax', 'lastMin', 'lastMax', 'ansMin', 'ansMax', 'enclosed', 'sandwiched', 'consecutive', 'plusOne', 'minusOne'].includes(type);
 
         return (
             <div className="picker-wrapper">
@@ -66,17 +66,20 @@ const ConditionPanel = ({
                     {currentVal === null ? '-' : currentVal}
                 </button>
                 {activeSelector === type && (
-                    <div className="picker-popover">
-                        {isNullable && (
-                            <button onClick={() => handleSelect(null)}>-</button>
-                        )}
-                        <button className="random-btn" onClick={() => handleSelect('R')}>R</button>
-                        {digitOptions.map((d, i) => (
-                            <button key={i} onClick={() => handleSelect(d)}>
-                                {d}
-                            </button>
-                        ))}
-                    </div>
+                    <>
+                        <div className="condition-selector-backdrop" onClick={() => setActiveSelector(null)} />
+                        <div className="picker-popover">
+                            {isNullable && (
+                                <button onClick={() => handleSelect(null)}>-</button>
+                            )}
+                            <button className="random-btn" onClick={() => handleSelect('R')}>R</button>
+                            {digitOptions.map((d, i) => (
+                                <button key={i} onClick={() => handleSelect(d)}>
+                                    {d}
+                                </button>
+                            ))}
+                        </div>
+                    </>
                 )}
             </div>
         );
@@ -104,12 +107,15 @@ const ConditionPanel = ({
                             {targetTotalDigits}
                         </button>
                         {activeSelector === 'total' && (
-                            <div className="picker-popover single-col">
-                                <button className="random-btn" onClick={() => handleSelect('R')}>R</button>
-                                {totalOptions.map(t => (
-                                    <button key={t} onClick={() => handleSelect(t)}>{t}</button>
-                                ))}
-                            </div>
+                            <>
+                                <div className="condition-selector-backdrop" onClick={() => setActiveSelector(null)} />
+                                <div className="picker-popover single-col">
+                                    <button className="random-btn" onClick={() => handleSelect('R')}>R</button>
+                                    {totalOptions.map(t => (
+                                        <button key={t} onClick={() => handleSelect(t)}>{t}</button>
+                                    ))}
+                                </div>
+                            </>
                         )}
                     </div>
                 </div>
@@ -123,12 +129,15 @@ const ConditionPanel = ({
                             {rowCount}
                         </button>
                         {activeSelector === 'rows' && (
-                            <div className="picker-popover">
-                                <button className="random-btn" onClick={() => handleSelect('R')}>R</button>
-                                {rowOptions.map(r => (
-                                    <button key={r} onClick={() => handleSelect(r)}>{r}</button>
-                                ))}
-                            </div>
+                            <>
+                                <div className="condition-selector-backdrop" onClick={() => setActiveSelector(null)} />
+                                <div className="picker-popover">
+                                    <button className="random-btn" onClick={() => handleSelect('R')}>R</button>
+                                    {rowOptions.map(r => (
+                                        <button key={r} onClick={() => handleSelect(r)}>{r}</button>
+                                    ))}
+                                </div>
+                            </>
                         )}
                     </div>
                 </div>
@@ -143,12 +152,15 @@ const ConditionPanel = ({
                                 {minDigit}
                             </button>
                             {activeSelector === 'min' && (
-                                <div className="picker-popover">
-                                    <button className="random-btn" onClick={() => handleSelect('R')}>R</button>
-                                    {lengths.map(l => (
-                                        <button key={l} onClick={() => handleSelect(l)}>{l}</button>
-                                    ))}
-                                </div>
+                                <>
+                                    <div className="condition-selector-backdrop" onClick={() => setActiveSelector(null)} />
+                                    <div className="picker-popover">
+                                        <button className="random-btn" onClick={() => handleSelect('R')}>R</button>
+                                        {lengths.map(l => (
+                                            <button key={l} onClick={() => handleSelect(l)}>{l}</button>
+                                        ))}
+                                    </div>
+                                </>
                             )}
                         </div>
                         <span className="separator">ー</span>
@@ -160,12 +172,15 @@ const ConditionPanel = ({
                                 {maxDigit}
                             </button>
                             {activeSelector === 'max' && (
-                                <div className="picker-popover">
-                                    <button className="random-btn" onClick={() => handleSelect('R')}>R</button>
-                                    {lengths.map(l => (
-                                        <button key={l} onClick={() => handleSelect(l)}>{l}</button>
-                                    ))}
-                                </div>
+                                <>
+                                    <div className="condition-selector-backdrop" onClick={() => setActiveSelector(null)} />
+                                    <div className="picker-popover">
+                                        <button className="random-btn" onClick={() => handleSelect('R')}>R</button>
+                                        {lengths.map(l => (
+                                            <button key={l} onClick={() => handleSelect(l)}>{l}</button>
+                                        ))}
+                                    </div>
+                                </>
                             )}
                         </div>
                     </div>

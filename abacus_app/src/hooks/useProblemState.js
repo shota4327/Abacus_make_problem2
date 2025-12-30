@@ -20,11 +20,11 @@ export const useProblemState = () => {
     const [isGenerating, setIsGenerating] = useState(false);
 
     // New Conditions
-    const [plusOneDigit, setPlusOneDigit] = useState(0);
-    const [minusOneDigit, setMinusOneDigit] = useState(0);
-    const [enclosedDigit, setEnclosedDigit] = useState(0);
-    const [sandwichedDigit, setSandwichedDigit] = useState(0);
-    const [consecutiveDigit, setConsecutiveDigit] = useState(0);
+    const [plusOneDigit, setPlusOneDigit] = useState(null);
+    const [minusOneDigit, setMinusOneDigit] = useState(null);
+    const [enclosedDigit, setEnclosedDigit] = useState(null);
+    const [sandwichedDigit, setSandwichedDigit] = useState(null);
+    const [consecutiveDigit, setConsecutiveDigit] = useState(null);
 
     // Row specific and Answer constraints (digit counts or patterns)
     const [firstRowMin, setFirstRowMin] = useState(null);

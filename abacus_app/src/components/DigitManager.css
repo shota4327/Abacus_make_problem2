@@ -71,6 +71,15 @@
     color: var(--primary-color);
 }
 
+.digit-selector-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 99;
+}
+
 .length-selector-overlay {
     position: absolute;
     top: 100%;
@@ -79,24 +88,25 @@
     z-index: 100;
     background: white;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 6px;
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    padding: 8px;
+    padding: 4px;
 }
 
 .length-selector-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
+    gap: 2px;
 }
 
 .length-opt-btn {
-    width: 32px;
-    height: 32px;
-    border: 1px solid #e2e8f0;
+    width: 28px;
+    height: 28px;
+    border: 1px solid #f1f5f9;
     background: #f8fafc;
-    border-radius: 4px;
+    border-radius: 3px;
     cursor: pointer;
+    font-size: 0.8rem;
     font-weight: bold;
 }
 

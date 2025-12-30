@@ -34,25 +34,28 @@ const DigitManager = ({ rowDigitCounts, totalRowDigits, updateRowDigitCount, min
                                     {count}
                                 </button>
                                 {activeSelector?.rowIndex === index && (
-                                    <div className="length-selector-overlay">
-                                        <div className="length-selector-grid">
-                                            <button
-                                                className="length-opt-btn random-btn"
-                                                onClick={() => handleLengthSelect(index, lengths[Math.floor(Math.random() * lengths.length)])}
-                                            >
-                                                R
-                                            </button>
-                                            {lengths.map(len => (
+                                    <>
+                                        <div className="digit-selector-backdrop" onClick={() => setActiveSelector(null)} />
+                                        <div className="length-selector-overlay">
+                                            <div className="length-selector-grid">
                                                 <button
-                                                    key={len}
-                                                    className="length-opt-btn"
-                                                    onClick={() => handleLengthSelect(index, len)}
+                                                    className="length-opt-btn random-btn"
+                                                    onClick={() => handleLengthSelect(index, lengths[Math.floor(Math.random() * lengths.length)])}
                                                 >
-                                                    {len}
+                                                    R
                                                 </button>
-                                            ))}
+                                                {lengths.map(len => (
+                                                    <button
+                                                        key={len}
+                                                        className="length-opt-btn"
+                                                        onClick={() => handleLengthSelect(index, len)}
+                                                    >
+                                                        {len}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
+                                    </>
                                 )}
                             </div>
                         </div>
