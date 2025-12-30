@@ -176,6 +176,24 @@ export const useProblemState = () => {
             }
         }
 
+        let isSandwichedUsed = sandwichedDigit === null;
+        if (!isSandwichedUsed) {
+            const target = Number(sandwichedDigit);
+            for (let ri = 0; ri < rowCount; ri++) {
+                const row = grid[ri];
+                for (let ci = 1; ci < COL_COUNT - 1; ci++) {
+                    if (row[ci] === target) {
+                        // 左右が同じ数字かどうか (3-5-3, 9-5-9 check)
+                        if (row[ci - 1] === row[ci + 1]) {
+                            isSandwichedUsed = true;
+                            break;
+                        }
+                    }
+                }
+                if (isSandwichedUsed) break;
+            }
+        }
+
         return {
             totalSum,
             frequency,
@@ -185,9 +203,10 @@ export const useProblemState = () => {
             rowDigitCounts,
             totalRowDigits,
             complementStatus,
-            isEnclosedUsed
+            isEnclosedUsed,
+            isSandwichedUsed
         };
-    }, [grid, rowCount, targetTotalDigits, plusOneDigit, minusOneDigit, isMinusRows, enclosedDigit]);
+    }, [grid, rowCount, targetTotalDigits, plusOneDigit, minusOneDigit, isMinusRows, enclosedDigit, sandwichedDigit]);
 
     // Core Logic (Refactored from original generateRandomGrid)
     const generateRandomGridLogic = useCallback(() => {
@@ -747,6 +766,7 @@ export const useProblemState = () => {
         rowDigitCounts: stats.rowDigitCounts,
         totalRowDigits: stats.totalRowDigits,
         complementStatus: stats.complementStatus,
-        isEnclosedUsed: stats.isEnclosedUsed
+        isEnclosedUsed: stats.isEnclosedUsed,
+        isSandwichedUsed: stats.isSandwichedUsed
     };
 };

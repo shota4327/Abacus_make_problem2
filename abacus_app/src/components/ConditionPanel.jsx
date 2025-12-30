@@ -18,7 +18,8 @@ const ConditionPanel = ({
     answerMax, setAnswerMax,
     hasMinus,
     complementStatus,
-    isEnclosedUsed
+    isEnclosedUsed,
+    isSandwichedUsed
 }) => {
     const [activeSelector, setActiveSelector] = useState(null);
     const lengths = [5, 6, 7, 8, 9, 10, 11, 12];
@@ -58,7 +59,9 @@ const ConditionPanel = ({
         // Types that allow "null" (displayed as "-")
         const isNullable = ['firstMin', 'firstMax', 'lastMin', 'lastMax', 'ansMin', 'ansMax', 'enclosed', 'sandwiched', 'consecutive', 'plusOne', 'minusOne'].includes(type);
 
-        const isWarn = type === 'enclosed' && !isEnclosedUsed;
+        const isWarn =
+            (type === 'enclosed' && !isEnclosedUsed) ||
+            (type === 'sandwiched' && !isSandwichedUsed);
         return (
             <div className="picker-wrapper">
                 <button

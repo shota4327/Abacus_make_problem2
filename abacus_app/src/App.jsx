@@ -42,7 +42,8 @@ function App() {
     answerMin, setAnswerMin,
     answerMax, setAnswerMax,
     complementStatus,
-    isEnclosedUsed
+    isEnclosedUsed,
+    isSandwichedUsed
   } = useProblemState();
 
   const hasMinus = isMinusRows.some(Boolean);
@@ -109,6 +110,7 @@ function App() {
         hasMinus={hasMinus}
         complementStatus={complementStatus}
         isEnclosedUsed={isEnclosedUsed}
+        isSandwichedUsed={isSandwichedUsed}
       />
     </div>
   );
