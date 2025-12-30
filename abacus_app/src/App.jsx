@@ -41,7 +41,8 @@ function App() {
     lastRowMax, setLastRowMax,
     answerMin, setAnswerMin,
     answerMax, setAnswerMax,
-    complementStatus
+    complementStatus,
+    isEnclosedUsed
   } = useProblemState();
 
   const hasMinus = isMinusRows.some(Boolean);
@@ -107,6 +108,7 @@ function App() {
         setAnswerMax={setAnswerMax}
         hasMinus={hasMinus}
         complementStatus={complementStatus}
+        isEnclosedUsed={isEnclosedUsed}
       />
     </div>
   );

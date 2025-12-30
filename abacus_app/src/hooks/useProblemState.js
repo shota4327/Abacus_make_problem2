@@ -157,6 +157,25 @@ export const useProblemState = () => {
             return totalFrequency[digit] - baseline;
         });
 
+        let isEnclosedUsed = enclosedDigit === null;
+        if (!isEnclosedUsed) {
+            const target = Number(enclosedDigit);
+            for (let ri = 0; ri < rowCount; ri++) {
+                const row = grid[ri];
+                for (let ci = 0; ci < COL_COUNT; ci++) {
+                    if (row[ci] === target) {
+                        const hasGapLeft = ci > 1 && row[ci - 2] === target;
+                        const hasGapRight = ci < 11 && row[ci + 2] === target;
+                        if (hasGapLeft || hasGapRight) {
+                            isEnclosedUsed = true;
+                            break;
+                        }
+                    }
+                }
+                if (isEnclosedUsed) break;
+            }
+        }
+
         return {
             totalSum,
             frequency,
@@ -165,9 +184,10 @@ export const useProblemState = () => {
             consecutive,
             rowDigitCounts,
             totalRowDigits,
-            complementStatus
+            complementStatus,
+            isEnclosedUsed
         };
-    }, [grid, rowCount, targetTotalDigits, plusOneDigit, minusOneDigit, isMinusRows]);
+    }, [grid, rowCount, targetTotalDigits, plusOneDigit, minusOneDigit, isMinusRows, enclosedDigit]);
 
     // Core Logic (Refactored from original generateRandomGrid)
     const generateRandomGridLogic = useCallback(() => {
@@ -726,6 +746,7 @@ export const useProblemState = () => {
         consecutive: stats.consecutive,
         rowDigitCounts: stats.rowDigitCounts,
         totalRowDigits: stats.totalRowDigits,
-        complementStatus: stats.complementStatus
+        complementStatus: stats.complementStatus,
+        isEnclosedUsed: stats.isEnclosedUsed
     };
 };

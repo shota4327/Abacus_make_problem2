@@ -57,6 +57,13 @@
     background: #eff6ff;
 }
 
+.picker-btn.warn {
+    background-color: #fdba74 !important;
+    /* Darker orange */
+    color: var(--danger-color) !important;
+    font-weight: bold;
+}
+
 .separator {
     color: #64748b;
     font-size: 0.8rem;

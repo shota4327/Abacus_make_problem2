@@ -17,7 +17,8 @@ const ConditionPanel = ({
     answerMin, setAnswerMin,
     answerMax, setAnswerMax,
     hasMinus,
-    complementStatus
+    complementStatus,
+    isEnclosedUsed
 }) => {
     const [activeSelector, setActiveSelector] = useState(null);
     const lengths = [5, 6, 7, 8, 9, 10, 11, 12];
@@ -57,10 +58,11 @@ const ConditionPanel = ({
         // Types that allow "null" (displayed as "-")
         const isNullable = ['firstMin', 'firstMax', 'lastMin', 'lastMax', 'ansMin', 'ansMax', 'enclosed', 'sandwiched', 'consecutive', 'plusOne', 'minusOne'].includes(type);
 
+        const isWarn = type === 'enclosed' && !isEnclosedUsed;
         return (
             <div className="picker-wrapper">
                 <button
-                    className={`picker-btn ${activeSelector === type ? 'active' : ''}`}
+                    className={`picker-btn ${activeSelector === type ? 'active' : ''} ${isWarn ? 'warn' : ''}`}
                     onClick={() => setActiveSelector(activeSelector === type ? null : type)}
                 >
                     {currentVal === null ? '-' : currentVal}
