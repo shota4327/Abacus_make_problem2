@@ -1,6 +1,14 @@
 .digit-panel {
     display: flex;
     flex-direction: column;
+    padding: 1rem 0.5rem !important;
+    /* Reduce horizontal padding */
+}
+
+.digit-panel h2 {
+    text-align: center;
+    white-space: nowrap;
+    /* Prevent wrapping */
 }
 
 .digit-manager-content {
@@ -35,6 +43,8 @@
     width: 24px;
     font-size: 0.75rem;
     color: #64748b;
+    display: flex;
+    justify-content: center;
 }
 
 .digit-button-wrapper {

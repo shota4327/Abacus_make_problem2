@@ -70,12 +70,14 @@ const ProblemGrid = ({ grid, updateDigit, isMinusRows, toggleRowMinus, totalSum,
                                             <>
                                                 <div className="selector-backdrop" onClick={() => setActiveCell(null)} />
                                                 {(() => {
-                                                    // rowNumber(25) + minus-toggle(20) + margin + 13cols(20*13)
-                                                    const colStart = 50 + colIndex * 20;
+                                                    // rowNumber(30) + minus-toggle(20) + margin + 13cols(20*13)
+                                                    // Actual panel width measured by browser is ~368px.
+                                                    // grid-container has some padding. Let's use 325 as conservative visible width.
+                                                    const colStart = 55 + colIndex * 20;
                                                     const colCenter = colStart + 10;
-                                                    const safetyBuffer = 1;
-                                                    const halfPop = 92 + safetyBuffer;
-                                                    const areaWidth = 330;
+                                                    const safetyBuffer = 8; // Increased for more comfortable margin
+                                                    const halfPop = 75 + safetyBuffer; // Popup width is 150px
+                                                    const areaWidth = 315; // Decreased to push left earlier
 
                                                     let shift = 0;
                                                     if (colCenter < halfPop) {

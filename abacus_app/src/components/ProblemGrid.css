@@ -32,10 +32,13 @@
 }
 
 .row-number {
-    width: 25px;
+    width: 30px;
     font-size: 0.8rem;
     color: #64748b;
     margin-right: 5px;
+    white-space: nowrap;
+    display: flex;
+    justify-content: center;
 }
 
 .digit-btn-wrapper {
@@ -63,14 +66,28 @@
     padding-right: 2px;
 }
 
-.minus-toggle,
-.minus-toggle-placeholder {
+.minus-toggle {
     width: 20px;
     height: 24px;
     margin-right: 4px;
     border: none;
     background: none;
     cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color);
+}
+
+.minus-toggle-placeholder {
+    width: 20px;
+    height: 24px;
+    margin-right: 4px;
+    border: none;
+    background: none;
+    cursor: default;
+    pointer-events: none;
     font-size: 1.2rem;
     display: flex;
     align-items: center;
@@ -156,7 +173,7 @@
     border-radius: 8px;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 4px;
     z-index: 101;
     border: 1px solid var(--border-color);
