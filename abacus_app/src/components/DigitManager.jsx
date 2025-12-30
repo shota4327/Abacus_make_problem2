@@ -36,6 +36,12 @@ const DigitManager = ({ rowDigitCounts, totalRowDigits, updateRowDigitCount, min
                                 {activeSelector?.rowIndex === index && (
                                     <div className="length-selector-overlay">
                                         <div className="length-selector-grid">
+                                            <button
+                                                className="length-opt-btn random-btn"
+                                                onClick={() => handleLengthSelect(index, lengths[Math.floor(Math.random() * lengths.length)])}
+                                            >
+                                                R
+                                            </button>
                                             {lengths.map(len => (
                                                 <button
                                                     key={len}

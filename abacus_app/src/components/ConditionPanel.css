@@ -105,3 +105,16 @@
     color: white;
     border-color: var(--primary-color);
 }
+
+.random-btn {
+    background-color: #fce7f3 !important;
+    /* Soft pink */
+    color: #db2777 !important;
+    /* Deep pink */
+    border-color: #f9a8d4 !important;
+}
+
+.random-btn:hover {
+    background-color: #db2777 !important;
+    color: white !important;
+}

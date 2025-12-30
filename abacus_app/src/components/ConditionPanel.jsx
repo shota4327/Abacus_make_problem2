@@ -26,21 +26,30 @@ const ConditionPanel = ({
     const digitOptions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
     const handleSelect = (val) => {
-        if (activeSelector === 'min') setMinDigit(Math.min(val, maxDigit));
-        else if (activeSelector === 'max') setMaxDigit(Math.max(val, minDigit));
-        else if (activeSelector === 'total') setTargetTotalDigits(val);
-        else if (activeSelector === 'rows') setRowCount(val);
-        else if (activeSelector === 'plusOne') setPlusOneDigit(val);
-        else if (activeSelector === 'minusOne') setMinusOneDigit(val);
-        else if (activeSelector === 'enclosed') setEnclosedDigit(val);
-        else if (activeSelector === 'sandwiched') setSandwichedDigit(val);
-        else if (activeSelector === 'consecutive') setConsecutiveDigit(val);
-        else if (activeSelector === 'firstMin') setFirstRowMin(val);
-        else if (activeSelector === 'firstMax') setFirstRowMax(val);
-        else if (activeSelector === 'lastMin') setLastRowMin(val);
-        else if (activeSelector === 'lastMax') setLastRowMax(val);
-        else if (activeSelector === 'ansMin') setAnswerMin(val);
-        else if (activeSelector === 'ansMax') setAnswerMax(val);
+        let finalVal = val;
+        if (val === 'R') {
+            const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+            if (activeSelector === 'min' || activeSelector === 'max') finalVal = getRandom(lengths);
+            else if (activeSelector === 'total') finalVal = getRandom(totalOptions);
+            else if (activeSelector === 'rows') finalVal = getRandom(rowOptions);
+            else finalVal = getRandom(digitOptions);
+        }
+
+        if (activeSelector === 'min') setMinDigit(Math.min(finalVal, maxDigit));
+        else if (activeSelector === 'max') setMaxDigit(Math.max(finalVal, minDigit));
+        else if (activeSelector === 'total') setTargetTotalDigits(finalVal);
+        else if (activeSelector === 'rows') setRowCount(finalVal);
+        else if (activeSelector === 'plusOne') setPlusOneDigit(finalVal);
+        else if (activeSelector === 'minusOne') setMinusOneDigit(finalVal);
+        else if (activeSelector === 'enclosed') setEnclosedDigit(finalVal);
+        else if (activeSelector === 'sandwiched') setSandwichedDigit(finalVal);
+        else if (activeSelector === 'consecutive') setConsecutiveDigit(finalVal);
+        else if (activeSelector === 'firstMin') setFirstRowMin(finalVal);
+        else if (activeSelector === 'firstMax') setFirstRowMax(finalVal);
+        else if (activeSelector === 'lastMin') setLastRowMin(finalVal);
+        else if (activeSelector === 'lastMax') setLastRowMax(finalVal);
+        else if (activeSelector === 'ansMin') setAnswerMin(finalVal);
+        else if (activeSelector === 'ansMax') setAnswerMax(finalVal);
         setActiveSelector(null);
     };
 
@@ -61,6 +70,7 @@ const ConditionPanel = ({
                         {isNullable && (
                             <button onClick={() => handleSelect(null)}>-</button>
                         )}
+                        <button className="random-btn" onClick={() => handleSelect('R')}>R</button>
                         {digitOptions.map((d, i) => (
                             <button key={i} onClick={() => handleSelect(d)}>
                                 {d}
@@ -95,6 +105,7 @@ const ConditionPanel = ({
                         </button>
                         {activeSelector === 'total' && (
                             <div className="picker-popover single-col">
+                                <button className="random-btn" onClick={() => handleSelect('R')}>R</button>
                                 {totalOptions.map(t => (
                                     <button key={t} onClick={() => handleSelect(t)}>{t}</button>
                                 ))}
@@ -113,6 +124,7 @@ const ConditionPanel = ({
                         </button>
                         {activeSelector === 'rows' && (
                             <div className="picker-popover">
+                                <button className="random-btn" onClick={() => handleSelect('R')}>R</button>
                                 {rowOptions.map(r => (
                                     <button key={r} onClick={() => handleSelect(r)}>{r}</button>
                                 ))}
@@ -132,6 +144,7 @@ const ConditionPanel = ({
                             </button>
                             {activeSelector === 'min' && (
                                 <div className="picker-popover">
+                                    <button className="random-btn" onClick={() => handleSelect('R')}>R</button>
                                     {lengths.map(l => (
                                         <button key={l} onClick={() => handleSelect(l)}>{l}</button>
                                     ))}
@@ -148,6 +161,7 @@ const ConditionPanel = ({
                             </button>
                             {activeSelector === 'max' && (
                                 <div className="picker-popover">
+                                    <button className="random-btn" onClick={() => handleSelect('R')}>R</button>
                                     {lengths.map(l => (
                                         <button key={l} onClick={() => handleSelect(l)}>{l}</button>
                                     ))}

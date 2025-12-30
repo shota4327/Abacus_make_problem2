@@ -92,6 +92,12 @@ const ProblemGrid = ({ grid, updateDigit, isMinusRows, toggleRowMinus, totalSum,
                                                                 transform: `translateX(calc(-50% + ${shift}px))`
                                                             }}
                                                         >
+                                                            <button
+                                                                className="random-btn"
+                                                                onClick={(e) => handleDigitSelect(Math.floor(Math.random() * 10), e)}
+                                                            >
+                                                                R
+                                                            </button>
                                                             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
                                                                 <button key={num} onClick={(e) => handleDigitSelect(num, e)}>{num}</button>
                                                             ))}

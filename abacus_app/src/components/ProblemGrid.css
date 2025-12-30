@@ -177,6 +177,17 @@
     color: white;
 }
 
+.random-btn {
+    background-color: #fce7f3 !important;
+    color: #db2777 !important;
+    border-color: #f9a8d4 !important;
+}
+
+.random-btn:hover {
+    background-color: #db2777 !important;
+    color: white !important;
+}
+
 .grid-footer {
     display: flex;
     justify-content: center;
