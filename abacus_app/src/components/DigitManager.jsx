@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import './DigitManager.css';
 
-const DigitManager = ({ rowDigitCounts, totalRowDigits, updateRowDigitCount }) => {
+const DigitManager = ({ rowDigitCounts, totalRowDigits, updateRowDigitCount, minDigit, maxDigit }) => {
     const [activeSelector, setActiveSelector] = useState(null); // { rowIndex }
 
-    const lengths = [5, 6, 7, 8, 9, 10, 11, 12];
+    const lengths = useMemo(() => {
+        const min = Math.min(minDigit || 5, maxDigit || 12);
+        const max = Math.max(minDigit || 5, maxDigit || 12);
+        const res = [];
+        for (let i = min; i <= max; i++) res.push(i);
+        return res;
+    }, [minDigit, maxDigit]);
 
     const handleLengthSelect = (rowIndex, length) => {
         updateRowDigitCount(rowIndex, length);

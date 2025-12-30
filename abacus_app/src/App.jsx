@@ -65,6 +65,8 @@ function App() {
         rowDigitCounts={rowDigitCounts}
         totalRowDigits={totalRowDigits}
         updateRowDigitCount={updateRowDigitCount}
+        minDigit={minDigit}
+        maxDigit={maxDigit}
       />
       <FrequencyCounter
         frequency={frequency}
