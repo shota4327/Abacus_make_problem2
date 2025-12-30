@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './ProblemGrid.css';
 
-const ProblemGrid = ({ grid, updateDigit, isMinusRows, toggleRowMinus, totalSum, generateRandomGrid }) => {
+const ProblemGrid = ({ grid, updateDigit, isMinusRows, toggleRowMinus, totalSum, generateRandomGrid, isMinusAllowed, setIsMinusAllowed }) => {
     const [activeCell, setActiveCell] = useState(null); // {row, col}
 
     const handleCellClick = (row, col) => {
@@ -164,6 +164,15 @@ const ProblemGrid = ({ grid, updateDigit, isMinusRows, toggleRowMinus, totalSum,
                 <button className="generate-btn" onClick={generateRandomGrid}>
                     再生成
                 </button>
+                <label className="minus-allowed-label" style={{ marginLeft: '1rem', display: 'flex', alignItems: 'center', cursor: 'pointer', color: '#333' }}>
+                    <input
+                        type="checkbox"
+                        checked={isMinusAllowed}
+                        onChange={(e) => setIsMinusAllowed(e.target.checked)}
+                        style={{ marginRight: '0.5rem', transform: 'scale(1.2)' }}
+                    />
+                    マイナス
+                </label>
             </div>
         </div>
     );

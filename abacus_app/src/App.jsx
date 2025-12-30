@@ -50,7 +50,9 @@ function App() {
     isLastMinValid,
     isLastMaxValid,
     isAnsMinValid,
-    isAnsMaxValid
+    isAnsMaxValid,
+    isMinusAllowed,
+    setIsMinusAllowed
   } = useProblemState();
 
   const hasMinus = isMinusRows.some(Boolean);
@@ -69,6 +71,8 @@ function App() {
         toggleRowMinus={toggleRowMinus}
         totalSum={totalSum}
         generateRandomGrid={generateRandomGrid}
+        isMinusAllowed={isMinusAllowed}
+        setIsMinusAllowed={setIsMinusAllowed}
       />
       <DigitManager
         rowDigitCounts={rowDigitCounts}

@@ -11,6 +11,7 @@ const createInitialGrid = () => {
 export const useProblemState = () => {
     const [grid, setGrid] = useState(createInitialGrid);
     const [isMinusRows, setIsMinusRows] = useState(Array(ROW_COUNT).fill(false));
+    const [isMinusAllowed, setIsMinusAllowed] = useState(false);
     const [minDigit, setMinDigit] = useState(5);
     const [maxDigit, setMaxDigit] = useState(12);
     const [targetTotalDigits, setTargetTotalDigits] = useState(130);
@@ -273,7 +274,9 @@ export const useProblemState = () => {
             isLastMinValid,
             isLastMaxValid,
             isAnsMinValid,
-            isAnsMaxValid
+            isAnsMaxValid,
+            isMinusAllowed,
+            setIsMinusAllowed
         };
     }, [grid, rowCount, targetTotalDigits, plusOneDigit, minusOneDigit, isMinusRows, enclosedDigit, sandwichedDigit, consecutiveDigit, firstRowMin, firstRowMax, lastRowMin, lastRowMax, answerMin, answerMax]);
 
@@ -281,6 +284,36 @@ export const useProblemState = () => {
     const generateRandomGridLogic = useCallback(() => {
         const TARGET_TIME_LIMIT = 5000;
         const startTime = performance.now();
+
+        const n = rowCount;
+        const nextMinusRows = Array(ROW_COUNT).fill(false);
+        if (isMinusAllowed) {
+            // Strict count: (n / 3) ± 1
+            const baseCount = Math.floor(n / 3);
+            const variations = [-1, 0, 1];
+            const variation = variations[Math.floor(Math.random() * variations.length)];
+            let targetCount = baseCount + variation;
+
+            // Ensure targetCount is within valid range [0, n - 1] 
+            // defined by available rows (indices 1 to n-1)
+            targetCount = Math.max(0, Math.min(n - 1, targetCount));
+
+            // Select random indices from 1 to n-1
+            const eligibleIndices = [];
+            for (let i = 1; i < n; i++) eligibleIndices.push(i);
+
+            // Shuffle eligible indices
+            for (let i = eligibleIndices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [eligibleIndices[i], eligibleIndices[j]] = [eligibleIndices[j], eligibleIndices[i]];
+            }
+
+            // Mark strict number of rows
+            for (let i = 0; i < targetCount; i++) {
+                nextMinusRows[eligibleIndices[i]] = true;
+            }
+        }
+
 
         // Helper: Clone grid
         const cloneGrid = (g) => g.map(row => [...row]);
@@ -331,7 +364,6 @@ export const useProblemState = () => {
 
         // Best-of-N Loop
         while (performance.now() - startTime < TARGET_TIME_LIMIT) {
-            const n = rowCount;
             const min = Math.min(minDigit, maxDigit);
             const max = Math.max(minDigit, maxDigit);
             const target = targetTotalDigits;
@@ -545,7 +577,6 @@ export const useProblemState = () => {
         const optStartTime = performance.now();
 
         // Fix Scope Variables
-        const n = rowCount;
 
         // Re-calculate locked cells for FinalGrid (since lockedCells was local to the generation loop)
         const msdIndicesFinal = FinalGrid.map(row => {
@@ -726,7 +757,7 @@ export const useProblemState = () => {
             let sum = 0;
             for (let r = 0; r < n; r++) {
                 let rowStr = g[r].map(d => d ?? 0).join('');
-                let val = parseInt(rowStr, 10) * (isMinusRows[r] ? -1 : 1);
+                let val = parseInt(rowStr, 10) * (nextMinusRows[r] ? -1 : 1);
                 sum += val;
             }
             return sum;
@@ -787,8 +818,9 @@ export const useProblemState = () => {
         }
 
         setGrid(FinalGrid);
+        setIsMinusRows(nextMinusRows);
     }, [minDigit, maxDigit, rowCount, targetTotalDigits, generateRandomRow,
-        firstRowMin, firstRowMax, lastRowMin, lastRowMax, answerMin, answerMax, isMinusRows,
+        firstRowMin, firstRowMax, lastRowMin, lastRowMax, answerMin, answerMax, isMinusAllowed,
         plusOneDigit, minusOneDigit]);
 
     const generateRandomGrid = useCallback(() => {
@@ -843,6 +875,8 @@ export const useProblemState = () => {
         isLastMinValid: stats.isLastMinValid,
         isLastMaxValid: stats.isLastMaxValid,
         isAnsMinValid: stats.isAnsMinValid,
-        isAnsMaxValid: stats.isAnsMaxValid
+        isAnsMaxValid: stats.isAnsMaxValid,
+        isMinusAllowed,
+        setIsMinusAllowed
     };
 };
