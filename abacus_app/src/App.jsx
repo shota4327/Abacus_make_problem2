@@ -21,6 +21,7 @@ function App() {
     updateDigit,
     updateRowDigitCount,
     generateRandomGrid,
+    isGenerating,
     totalSum,
     frequency,
     totalFrequency,
@@ -47,6 +48,11 @@ function App() {
 
   return (
     <div className="app-container">
+      {isGenerating && (
+        <div className="loading-overlay">
+          <div className="loading-message">生成中...</div>
+        </div>
+      )}
       <ProblemGrid
         grid={grid}
         updateDigit={updateDigit}

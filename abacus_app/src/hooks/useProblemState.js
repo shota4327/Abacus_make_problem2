@@ -16,6 +16,9 @@ export const useProblemState = () => {
     const [targetTotalDigits, setTargetTotalDigits] = useState(130);
     const [rowCount, setRowCount] = useState(20);
 
+    // State for loading overlay
+    const [isGenerating, setIsGenerating] = useState(false);
+
     // New Conditions
     const [plusOneDigit, setPlusOneDigit] = useState(0);
     const [minusOneDigit, setMinusOneDigit] = useState(0);
@@ -166,7 +169,8 @@ export const useProblemState = () => {
         };
     }, [grid, rowCount, targetTotalDigits, plusOneDigit, minusOneDigit, isMinusRows]);
 
-    const generateRandomGrid = useCallback(() => {
+    // Core Logic (Refactored from original generateRandomGrid)
+    const generateRandomGridLogic = useCallback(() => {
         const TARGET_TIME_LIMIT = 5000;
         const startTime = performance.now();
 
@@ -497,6 +501,15 @@ export const useProblemState = () => {
         firstRowMin, firstRowMax, lastRowMin, lastRowMax, answerMin, answerMax, isMinusRows,
         plusOneDigit, minusOneDigit]);
 
+    const generateRandomGrid = useCallback(() => {
+        setIsGenerating(true);
+        // Delay to allow UI to render the loading state
+        setTimeout(() => {
+            generateRandomGridLogic();
+            setIsGenerating(false);
+        }, 50);
+    }, [generateRandomGridLogic]);
+
     return {
         grid: grid.slice(0, rowCount), // Only expose active rows
         minDigit,
@@ -512,6 +525,7 @@ export const useProblemState = () => {
         updateDigit,
         updateRowDigitCount,
         generateRandomGrid,
+        isGenerating,
         plusOneDigit, setPlusOneDigit,
         minusOneDigit, setMinusOneDigit,
         enclosedDigit, setEnclosedDigit,
