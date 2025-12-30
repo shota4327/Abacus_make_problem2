@@ -194,6 +194,15 @@ export const useProblemState = () => {
             }
         }
 
+        let isConsecutiveUsed = consecutiveDigit === null;
+        if (!isConsecutiveUsed) {
+            const target = Number(consecutiveDigit);
+            // consecutive[d1][d2] means d1 followed by d2. So [target][target] means target followed by target.
+            if (consecutive[target][target] > 0) {
+                isConsecutiveUsed = true;
+            }
+        }
+
         return {
             totalSum,
             frequency,
@@ -204,9 +213,10 @@ export const useProblemState = () => {
             totalRowDigits,
             complementStatus,
             isEnclosedUsed,
-            isSandwichedUsed
+            isSandwichedUsed,
+            isConsecutiveUsed
         };
-    }, [grid, rowCount, targetTotalDigits, plusOneDigit, minusOneDigit, isMinusRows, enclosedDigit, sandwichedDigit]);
+    }, [grid, rowCount, targetTotalDigits, plusOneDigit, minusOneDigit, isMinusRows, enclosedDigit, sandwichedDigit, consecutiveDigit]);
 
     // Core Logic (Refactored from original generateRandomGrid)
     const generateRandomGridLogic = useCallback(() => {
@@ -767,6 +777,7 @@ export const useProblemState = () => {
         totalRowDigits: stats.totalRowDigits,
         complementStatus: stats.complementStatus,
         isEnclosedUsed: stats.isEnclosedUsed,
-        isSandwichedUsed: stats.isSandwichedUsed
+        isSandwichedUsed: stats.isSandwichedUsed,
+        isConsecutiveUsed: stats.isConsecutiveUsed
     };
 };

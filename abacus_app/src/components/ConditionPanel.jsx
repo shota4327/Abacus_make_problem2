@@ -19,7 +19,8 @@ const ConditionPanel = ({
     hasMinus,
     complementStatus,
     isEnclosedUsed,
-    isSandwichedUsed
+    isSandwichedUsed,
+    isConsecutiveUsed
 }) => {
     const [activeSelector, setActiveSelector] = useState(null);
     const lengths = [5, 6, 7, 8, 9, 10, 11, 12];
@@ -61,7 +62,8 @@ const ConditionPanel = ({
 
         const isWarn =
             (type === 'enclosed' && !isEnclosedUsed) ||
-            (type === 'sandwiched' && !isSandwichedUsed);
+            (type === 'sandwiched' && !isSandwichedUsed) ||
+            (type === 'consecutive' && !isConsecutiveUsed);
         return (
             <div className="picker-wrapper">
                 <button
