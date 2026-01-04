@@ -122,7 +122,7 @@
     gap: 0.5rem;
     align-items: center;
     margin-top: 1rem;
-    padding: 0.5rem 4px 0 4px;
+    padding: 4px 4px 0 4px;
     border-top: 2px solid var(--text-color);
     font-weight: bold;
     font-size: 1.2rem;
@@ -135,5 +135,4 @@
 
 .total-value {
     color: var(--text-color);
-    font-family: monospace;
 }

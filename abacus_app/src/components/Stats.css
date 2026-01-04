@@ -132,7 +132,11 @@ td.warn {
 
 .frequency-table tfoot .total-row td {
     border-top: 2px solid var(--text-color);
-    padding-top: 0.8rem;
+    padding-top: 4px;
+}
+
+.frequency-table tfoot .total-row .row-label {
+    font-size: 0.8rem;
 }
 
 /* Spacer for tfoot */
