@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import './ConditionPanel.css';
 
 const ConditionPanel = ({
+    title = "作問条件",
     minDigit, maxDigit, setMinDigit, setMaxDigit,
     targetTotalDigits, setTargetTotalDigits,
     rowCount, setRowCount,
@@ -125,7 +126,7 @@ const ConditionPanel = ({
 
     return (
         <div className="panel condition-panel">
-            <h2>作問条件</h2>
+            <h2>{title}</h2>
             <div className="condition-list">
                 <div className="condition-item">
                     <span className="label">総字数:</span>

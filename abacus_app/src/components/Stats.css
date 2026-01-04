@@ -81,6 +81,8 @@ td.warn {
     border-right: 1px solid var(--border-color);
     padding: 2px;
     width: 32px;
+    height: 30px;
+    /* Explicit height to match ProblemGrid spacer */
     box-sizing: border-box;
 }
 
@@ -232,4 +234,105 @@ td.warn {
     min-width: 32px !important;
     font-size: 1rem;
     color: var(--text-color);
+}
+
+/* Digit Column Styles */
+.frequency-table .digit-col-header,
+.frequency-table .digit-col-cell {
+    width: 44px;
+    /* A bit wider for the button */
+    min-width: 44px;
+    border-left: 2px solid var(--border-color);
+    /* Separator */
+}
+
+.frequency-table .digit-col-cell {
+    padding: 2px;
+}
+
+/* Digit Manager Button Styles (Ported from DigitManager.css) */
+.digit-button-wrapper {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.digit-length-btn {
+    width: 32px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--border-color);
+    background: white;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-color);
+}
+
+.digit-length-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.digit-selector-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 999;
+    /* High z-index to cover everything */
+}
+
+.length-selector-overlay {
+    position: absolute;
+    top: 100%;
+    /* Below the button */
+    right: 0;
+    left: auto;
+    /* Explicitly auto to prevent left alignment */
+    transform: none;
+    z-index: 1000;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    padding: 4px;
+    min-width: 100px;
+    /* Ensure 3 columns fit */
+    width: max-content;
+    /* Prevent wrapping */
+}
+
+.length-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+}
+
+.length-opt-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid #f1f5f9;
+    background: #f8fafc;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+.length-opt-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.random-btn {
+    background-color: #e0f2fe;
+    /* Light blue */
+    color: var(--secondary-color);
 }

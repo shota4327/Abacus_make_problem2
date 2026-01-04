@@ -1,135 +1,40 @@
-import React from 'react';
-import ProblemGrid from './components/ProblemGrid';
-import DigitManager from './components/DigitManager';
-import FrequencyCounter from './components/FrequencyCounter';
-import ConsecutiveCounter from './components/ConsecutiveCounter';
-import ConditionPanel from './components/ConditionPanel';
-import { useProblemState } from './hooks/useProblemState';
+import React, { useState, useCallback } from 'react';
+import Sidebar from './components/Sidebar';
+import ProblemContainer from './components/ProblemContainer';
+import ConditionManager from './components/ConditionManager';
+import { createInitialProblemState } from './constants/initialState';
 import './index.css';
 
 function App() {
-  const {
-    grid,
-    minDigit,
-    maxDigit,
-    targetTotalDigits,
-    rowCount,
-    setMinDigit,
-    setMaxDigit,
-    setTargetTotalDigits,
-    setRowCount,
-    updateDigit,
-    updateRowDigitCount,
-    generateRandomGrid,
-    isGenerating,
-    totalSum,
-    frequency,
-    totalFrequency,
-    frequencyDiffs,
-    consecutive,
-    rowDigitCounts,
-    totalRowDigits,
-    plusOneDigit, setPlusOneDigit,
-    minusOneDigit, setMinusOneDigit,
-    enclosedDigit, setEnclosedDigit,
-    sandwichedDigit, setSandwichedDigit,
-    consecutiveDigit, setConsecutiveDigit,
-    isMinusRows, toggleRowMinus,
-    firstRowMin, setFirstRowMin,
-    firstRowMax, setFirstRowMax,
-    lastRowMin, setLastRowMin,
-    lastRowMax, setLastRowMax,
-    answerMin, setAnswerMin,
-    answerMax, setAnswerMax,
-    complementStatus,
-    isEnclosedUsed,
-    isSandwichedUsed,
-    isConsecutiveUsed,
-    isFirstMinValid,
-    isFirstMaxValid,
-    isLastMinValid,
-    isLastMaxValid,
-    isAnsMinValid,
-    isAnsMaxValid,
-    isMinusAllowed,
-    setIsMinusAllowed
-  } = useProblemState();
+  const [problems, setProblems] = useState(() =>
+    Array(10).fill(null).map(createInitialProblemState)
+  );
+  const [currentTab, setCurrentTab] = useState(0); // 0-9 or 'manager'
 
-  const hasMinus = isMinusRows.some(Boolean);
+  // Callback to update state for a specific problem index
+  const handleUpdate = useCallback((index, newState) => {
+    setProblems(prev => {
+      const next = [...prev];
+      next[index] = newState;
+      return next;
+    });
+  }, []);
 
   return (
     <div className="app-container">
-      {isGenerating && (
-        <div className="loading-overlay">
-          <div className="loading-message">生成中...</div>
-        </div>
-      )}
-      <ProblemGrid
-        grid={grid}
-        updateDigit={updateDigit}
-        isMinusRows={isMinusRows}
-        toggleRowMinus={toggleRowMinus}
-        totalSum={totalSum}
-        generateRandomGrid={generateRandomGrid}
-        isMinusAllowed={isMinusAllowed}
-        setIsMinusAllowed={setIsMinusAllowed}
-      />
-      <DigitManager
-        rowDigitCounts={rowDigitCounts}
-        totalRowDigits={totalRowDigits}
-        updateRowDigitCount={updateRowDigitCount}
-        minDigit={minDigit}
-        maxDigit={maxDigit}
-      />
-      <FrequencyCounter
-        frequency={frequency}
-        totalFrequency={totalFrequency}
-        frequencyDiffs={frequencyDiffs}
-      />
-      <ConsecutiveCounter consecutive={consecutive} />
-      <ConditionPanel
-        minDigit={minDigit}
-        maxDigit={maxDigit}
-        setMinDigit={setMinDigit}
-        setMaxDigit={setMaxDigit}
-        targetTotalDigits={targetTotalDigits}
-        setTargetTotalDigits={setTargetTotalDigits}
-        rowCount={rowCount}
-        setRowCount={setRowCount}
-        plusOneDigit={plusOneDigit}
-        setPlusOneDigit={setPlusOneDigit}
-        minusOneDigit={minusOneDigit}
-        setMinusOneDigit={setMinusOneDigit}
-        enclosedDigit={enclosedDigit}
-        setEnclosedDigit={setEnclosedDigit}
-        sandwichedDigit={sandwichedDigit}
-        setSandwichedDigit={setSandwichedDigit}
-        consecutiveDigit={consecutiveDigit}
-        setConsecutiveDigit={setConsecutiveDigit}
-        firstRowMin={firstRowMin}
-        setFirstRowMin={setFirstRowMin}
-        firstRowMax={firstRowMax}
-        setFirstRowMax={setFirstRowMax}
-        lastRowMin={lastRowMin}
-        setLastRowMin={setLastRowMin}
-        lastRowMax={lastRowMax}
-        setLastRowMax={setLastRowMax}
-        answerMin={answerMin}
-        setAnswerMin={setAnswerMin}
-        answerMax={answerMax}
-        setAnswerMax={setAnswerMax}
-        hasMinus={hasMinus}
-        complementStatus={complementStatus}
-        isEnclosedUsed={isEnclosedUsed}
-        isSandwichedUsed={isSandwichedUsed}
-        isConsecutiveUsed={isConsecutiveUsed}
-        isFirstMinValid={isFirstMinValid}
-        isFirstMaxValid={isFirstMaxValid}
-        isLastMinValid={isLastMinValid}
-        isLastMaxValid={isLastMaxValid}
-        isAnsMinValid={isAnsMinValid}
-        isAnsMaxValid={isAnsMaxValid}
-      />
+      <Sidebar currentTab={currentTab} onTabChange={setCurrentTab} />
+      <div className={`content-area ${currentTab === 'manager' ? 'manager-mode' : ''}`}>
+        {currentTab === 'manager' ? (
+          <ConditionManager problems={problems} onUpdate={handleUpdate} />
+        ) : (
+          // Key ensures component remounts when tab changes, resetting internal hook state to initialData
+          <ProblemContainer
+            key={currentTab}
+            initialData={problems[currentTab]}
+            onUpdate={(newState) => handleUpdate(currentTab, newState)}
+          />
+        )}
+      </div>
     </div>
   );
 }

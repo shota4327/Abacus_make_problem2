@@ -1,39 +1,65 @@
 import { useState, useMemo, useCallback } from 'react';
+import { createInitialGrid } from '../constants/initialState';
 
 const ROW_COUNT = 20;
 const COL_COUNT = 13;
 
-// Helper to create initial grid (20 rows x 13 cols, initialized to 0)
-const createInitialGrid = () => {
-    return Array(ROW_COUNT).fill(null).map(() => Array(COL_COUNT).fill(0));
-};
-
-export const useProblemState = () => {
-    const [grid, setGrid] = useState(createInitialGrid);
-    const [isMinusRows, setIsMinusRows] = useState(Array(ROW_COUNT).fill(false));
-    const [isMinusAllowed, setIsMinusAllowed] = useState(false);
-    const [minDigit, setMinDigit] = useState(5);
-    const [maxDigit, setMaxDigit] = useState(12);
-    const [targetTotalDigits, setTargetTotalDigits] = useState(130);
-    const [rowCount, setRowCount] = useState(20);
+export const useProblemState = (initialData = {}) => {
+    // Explicit initialization with function to avoid re-running defaults
+    const [grid, setGrid] = useState(() => {
+        if (initialData.grid) return initialData.grid;
+        return createInitialGrid();
+    });
+    const [isMinusRows, setIsMinusRows] = useState(() => initialData.isMinusRows || Array(ROW_COUNT).fill(false));
+    const [isMinusAllowed, setIsMinusAllowed] = useState(() => initialData.isMinusAllowed !== undefined ? initialData.isMinusAllowed : false);
+    const [minDigit, setMinDigit] = useState(() => initialData.minDigit || 5);
+    const [maxDigit, setMaxDigit] = useState(() => initialData.maxDigit || 12);
+    const [targetTotalDigits, setTargetTotalDigits] = useState(() => initialData.targetTotalDigits || 130);
+    const [rowCount, setRowCount] = useState(() => initialData.rowCount || 20);
 
     // State for loading overlay
     const [isGenerating, setIsGenerating] = useState(false);
 
     // New Conditions
-    const [plusOneDigit, setPlusOneDigit] = useState(null);
-    const [minusOneDigit, setMinusOneDigit] = useState(null);
-    const [enclosedDigit, setEnclosedDigit] = useState(null);
-    const [sandwichedDigit, setSandwichedDigit] = useState(null);
-    const [consecutiveDigit, setConsecutiveDigit] = useState(null);
+    const [plusOneDigit, setPlusOneDigit] = useState(() => initialData.plusOneDigit ?? null);
+    const [minusOneDigit, setMinusOneDigit] = useState(() => initialData.minusOneDigit ?? null);
+    const [enclosedDigit, setEnclosedDigit] = useState(() => initialData.enclosedDigit ?? null);
+    const [sandwichedDigit, setSandwichedDigit] = useState(() => initialData.sandwichedDigit ?? null);
+    const [consecutiveDigit, setConsecutiveDigit] = useState(() => initialData.consecutiveDigit ?? null);
 
-    // Row specific and Answer constraints (digit counts or patterns)
-    const [firstRowMin, setFirstRowMin] = useState(null);
-    const [firstRowMax, setFirstRowMax] = useState(null);
-    const [lastRowMin, setLastRowMin] = useState(null);
-    const [lastRowMax, setLastRowMax] = useState(null);
-    const [answerMin, setAnswerMin] = useState(null);
-    const [answerMax, setAnswerMax] = useState(null);
+    // Row specific and Answer constraints
+    const [firstRowMin, setFirstRowMin] = useState(() => initialData.firstRowMin ?? null);
+    const [firstRowMax, setFirstRowMax] = useState(() => initialData.firstRowMax ?? null);
+    const [lastRowMin, setLastRowMin] = useState(() => initialData.lastRowMin ?? null);
+    const [lastRowMax, setLastRowMax] = useState(() => initialData.lastRowMax ?? null);
+    const [answerMin, setAnswerMin] = useState(() => initialData.answerMin ?? null);
+    const [answerMax, setAnswerMax] = useState(() => initialData.answerMax ?? null);
+
+    // Snapshot of current state for saving
+    const currentState = useMemo(() => ({
+        grid,
+        isMinusRows,
+        isMinusAllowed,
+        minDigit,
+        maxDigit,
+        targetTotalDigits,
+        rowCount,
+        plusOneDigit,
+        minusOneDigit,
+        enclosedDigit,
+        sandwichedDigit,
+        consecutiveDigit,
+        firstRowMin,
+        firstRowMax,
+        lastRowMin,
+        lastRowMax,
+        answerMin,
+        answerMax
+    }), [
+        grid, isMinusRows, isMinusAllowed, minDigit, maxDigit, targetTotalDigits, rowCount,
+        plusOneDigit, minusOneDigit, enclosedDigit, sandwichedDigit, consecutiveDigit,
+        firstRowMin, firstRowMax, lastRowMin, lastRowMax, answerMin, answerMax
+    ]);
 
     // Update a single digit
     const updateDigit = useCallback((rowIndex, colIndex, value) => {
@@ -119,18 +145,8 @@ export const useProblemState = () => {
             const rowVal = (parseInt(rowValStr, 10) || 0) * (isMinusRows[ri] ? -1 : 1);
             totalSum += rowVal;
 
-            // Complement check: if running total drops below 0 at any point (implied sequential addition)
-            // Note: This check happens AFTER the row is added. 
-            // Abacus logic: negative intermediate result means "borrow" or "complement".
             if (totalSum < 0) {
-                // Actually, "during calculation" implies running total. 
-                // We check after each row addition.
-                // However, finding complement might be triggered even if total is positive but operation subtracts?
-                // Standard definition: If the *value on the abacus* would be negative? 
-                // Abacus usually doesn't show negative. 
-                // Interpretation: "Intermediate total < 0" seems correct for "complement calculation needed".
-                // But wait, if we start with 10 - 20, we get -10. 
-                // Let's stick to "running total < 0".
+                // Complement check placeholder
             }
         }
 
@@ -212,19 +228,6 @@ export const useProblemState = () => {
 
         // 1. First Row
         const firstRow = grid[0];
-        // MSD: First non-null/non-zero digit? Or just first non-null?
-        // Typically MSD is the first digit from left that is present.
-        // Based on grid structure (0-12), usually digits are filled from right or left depending on implementation.
-        // Assuming standard representation where index 0 is high value or index 12 is low value?
-        // Actually, let's look at how numbers are rendered.
-        // Usually index 0..12. Let's find first non-null digit.
-        // WAIT: 'grid' contains strings or numbers? Earlier debugging showed strings like "0", "3", or empty.
-        // Let's assume we scan for the first valid digit for MSD.
-        // For LSD (Min position?), usually the last column (index 12 or 11?).
-        // Let's rely on standard logic:
-        // scan from 0 to 12. First found is MSD. Last found is LSD.
-        // NOTE: The UI calls them "Min" and "Max" but the prompt says 1口目 (First Row) & 最終口 (Last Row) & 答え (Answer).
-        // And confirms: "Min" is MSD, "Max" is LSD.
 
         const getMsdLsd = (rowArr) => {
             let msd = null;
@@ -275,10 +278,11 @@ export const useProblemState = () => {
             isLastMaxValid,
             isAnsMinValid,
             isAnsMaxValid,
+            currentState, // Return the state snapshot
             isMinusAllowed,
             setIsMinusAllowed
         };
-    }, [grid, rowCount, targetTotalDigits, plusOneDigit, minusOneDigit, isMinusRows, enclosedDigit, sandwichedDigit, consecutiveDigit, firstRowMin, firstRowMax, lastRowMin, lastRowMax, answerMin, answerMax]);
+    }, [grid, rowCount, targetTotalDigits, plusOneDigit, minusOneDigit, isMinusRows, enclosedDigit, sandwichedDigit, consecutiveDigit, firstRowMin, firstRowMax, lastRowMin, lastRowMax, answerMin, answerMax, currentState, isMinusAllowed]);
 
     // Core Logic (Refactored from original generateRandomGrid)
     const generateRandomGridLogic = useCallback(() => {
@@ -833,7 +837,7 @@ export const useProblemState = () => {
     }, [generateRandomGridLogic]);
 
     return {
-        grid: grid.slice(0, rowCount), // Only expose active rows
+        grid, // Return full grid, let components handle display limit if needed
         minDigit,
         maxDigit,
         targetTotalDigits,
@@ -877,6 +881,7 @@ export const useProblemState = () => {
         isAnsMinValid: stats.isAnsMinValid,
         isAnsMaxValid: stats.isAnsMaxValid,
         isMinusAllowed,
-        setIsMinusAllowed
+        setIsMinusAllowed,
+        currentState: stats.currentState // Expose currentState
     };
 };

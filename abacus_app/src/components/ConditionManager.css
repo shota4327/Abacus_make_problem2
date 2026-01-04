@@ -1,0 +1,19 @@
+.condition-manager-container {
+    padding: 1rem;
+    overflow-y: auto;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.condition-manager-grid {
+    display: grid;
+    /* Responsive grid: min 300px per item */
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1rem;
+}
+
+.condition-manager-item .condition-panel {
+    height: 100%;
+    /* Ensure uniform height */
+    margin-bottom: 0;
+}
