@@ -24,5 +24,7 @@ export const createInitialProblemState = () => ({
     lastRowMin: null,
     lastRowMax: null,
     answerMin: null,
-    answerMax: null
+    answerMax: null,
+    hasMinus: false,
+    complementStatus: "なし"
 });

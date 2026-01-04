@@ -10,7 +10,7 @@ const Sidebar = ({ currentTab, onTabChange }) => {
                     className={`sidebar-btn ${currentTab === 'manager' ? 'active' : ''}`}
                     onClick={() => onTabChange('manager')}
                 >
-                    作問条件管理
+                    作問条件一覧
                 </button>
                 {Array.from({ length: 10 }, (_, i) => (
                     <button

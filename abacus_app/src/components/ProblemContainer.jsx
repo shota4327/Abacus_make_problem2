@@ -46,9 +46,14 @@ const ProblemContainer = ({ initialData, onUpdate }) => {
     // Sync state back to parent whenever it changes
     useEffect(() => {
         if (onUpdateRef.current && currentState) {
-            onUpdateRef.current(currentState);
+            const extendedState = {
+                ...currentState,
+                hasMinus: isMinusRows.some(Boolean),
+                complementStatus
+            };
+            onUpdateRef.current(extendedState);
         }
-    }, [currentState]);
+    }, [currentState, isMinusRows, complementStatus]);
 
     return (
         <>
