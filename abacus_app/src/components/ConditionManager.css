@@ -24,6 +24,8 @@
 
 .condition-table {
     width: 100%;
+    min-width: 850px;
+    table-layout: fixed;
     border-collapse: collapse;
     font-size: 0.9rem;
     text-align: center;
@@ -63,8 +65,9 @@
     padding: 4px;
     border-bottom: 1px solid #f1f5f9;
     border-right: 1px solid #f1f5f9;
-    height: 40px;
-    /* Uniform height */
+    /* Fixed height for all rows as requested */
+    height: 42px;
+    vertical-align: middle;
 }
 
 .condition-table tr:hover td {
@@ -74,6 +77,13 @@
 .condition-table tr:hover td.label-col {
     background-color: #f1f5f9;
     /* Darker for label */
+}
+
+.readonly-text {
+    word-break: break-all;
+    white-space: normal;
+    line-height: 1.2;
+    font-size: 0.85rem;
 }
 
 .cell-container {
@@ -89,9 +99,9 @@
     width: 100%;
     max-width: 40px;
     height: 32px;
-    border: 1px solid transparent;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
-    background: transparent;
+    background: white;
     cursor: pointer;
     font-size: 1rem;
     color: var(--text-color);
@@ -166,4 +176,31 @@
     bottom: 0;
     z-index: 99;
     cursor: default;
+}
+
+/* Range Styles */
+.range-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    height: 100%;
+}
+
+.range-part {
+    position: relative;
+    width: auto;
+    display: flex;
+    justify-content: center;
+}
+
+.range-separator {
+    color: #64748b;
+    font-size: 0.8rem;
+}
+
+.cell-btn.half {
+    width: 32px;
+    padding: 0;
 }
