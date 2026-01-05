@@ -179,10 +179,13 @@ export const useProblemState = (initialData = {}) => {
             const target = Number(enclosedDigit);
             for (let ri = 0; ri < rowCount; ri++) {
                 const row = grid[ri];
+                const firstNonZero = row.findIndex(d => d !== null && d !== 0);
                 for (let ci = 0; ci < COL_COUNT; ci++) {
-                    if (row[ci] === target) {
-                        const hasGapLeft = ci > 1 && row[ci - 2] === target;
-                        const hasGapRight = ci < 11 && row[ci + 2] === target;
+                    // Skip leading zeros
+                    if (firstNonZero === -1 || ci < firstNonZero) continue;
+                    if (row[ci] !== null && row[ci] === target) {
+                        const hasGapLeft = ci > 1 && (ci - 2 >= firstNonZero) && row[ci - 2] !== null && row[ci - 2] === target;
+                        const hasGapRight = ci < 11 && row[ci + 2] !== null && row[ci + 2] === target;
                         if (hasGapLeft || hasGapRight) {
                             isEnclosedUsed = true;
                             break;
@@ -198,10 +201,13 @@ export const useProblemState = (initialData = {}) => {
             const target = Number(sandwichedDigit);
             for (let ri = 0; ri < rowCount; ri++) {
                 const row = grid[ri];
+                const firstNonZero = row.findIndex(d => d !== null && d !== 0);
                 for (let ci = 1; ci < COL_COUNT - 1; ci++) {
-                    if (row[ci] === target) {
+                    // Skip leading zeros
+                    if (firstNonZero === -1 || ci < firstNonZero) continue;
+                    if (row[ci] !== null && row[ci] === target) {
                         // 左右が同じ数字かどうか (3-5-3, 9-5-9 check)
-                        if (row[ci - 1] === row[ci + 1]) {
+                        if (row[ci - 1] !== null && (ci - 1 >= firstNonZero) && row[ci - 1] === row[ci + 1]) {
                             isSandwichedUsed = true;
                             break;
                         }
@@ -362,9 +368,55 @@ export const useProblemState = (initialData = {}) => {
             return count;
         };
 
+
+
+        // Helper to check validity of a cell (same as countOrangeCells logic but for a specific cell)
+        const isSafeToPlace = (g, r, c, val) => {
+            // Check row constraints (leading zero)
+            if (val === 0) {
+                // Check if it becomes leading zero
+                // Find first non-null column index for this row
+                let firstAudit = 0;
+                while (firstAudit < 13 && g[r][firstAudit] === null) firstAudit++;
+                if (c === firstAudit) return false;
+            }
+
+            // Check adjacent and gap duplicates
+            // Adjacent
+            if (c > 1) { // Left
+                const left = g[r][c - 1];
+                if (left !== null && left === val) return false;
+            }
+            if (c < 12) { // Right
+                const right = g[r][c + 1];
+                if (right !== null && right === val) return false;
+            }
+            // Gap
+            if (c > 2) { // Left gap
+                const left2 = g[r][c - 2];
+                if (left2 !== null && left2 === val) return false;
+            }
+            if (c < 11) { // Right gap
+                const right2 = g[r][c + 2];
+                if (right2 !== null && right2 === val) return false;
+            }
+            return true;
+        };
+
+        const calculateSum = (g) => {
+            let sum = 0;
+            for (let r = 0; r < n; r++) {
+                let rowStr = g[r].map(d => d ?? 0).join('');
+                let val = parseInt(rowStr, 10) * (nextMinusRows[r] ? -1 : 1);
+                sum += val;
+            }
+            return sum;
+        };
+
         let bestGrid = null;
         let bestBalanceScore = -Infinity; // Higher is better (negative of diff)
         let bestOrangeScore = -Infinity; // Higher is better (negative of count)
+        let bestAnswerMatch = false; // True if answerMin constraint is met
 
         // Best-of-N Loop
         while (performance.now() - startTime < TARGET_TIME_LIMIT) {
@@ -541,6 +593,13 @@ export const useProblemState = (initialData = {}) => {
             diff2.forEach(d => { if (d > mo) mo = d; if (d < mu) mu = d; });
             const isBalanced = (mo < 1 && mu > -1);
 
+            // Check Answer Min Logic
+            let isAnsMinOk = true;
+            if (answerMin !== null) {
+                const s = String(Math.abs(calculateSum(newGrid)));
+                if (s[0] !== String(answerMin)) isAnsMinOk = false;
+            }
+
             // Compare with global best
             let currentIsBetter = false;
 
@@ -553,9 +612,16 @@ export const useProblemState = (initialData = {}) => {
                     currentIsBetter = true;
                 } else if (isBalanced && bestBalanced) {
                     // Both balanced: prefer fewer orange cells
-                    if (orange < -bestOrangeScore) currentIsBetter = true;
+                    if (orange < -bestOrangeScore) {
+                        currentIsBetter = true;
+                    } else if (orange === -bestOrangeScore) {
+                        // Tie-breaker: Answer Min
+                        if (isAnsMinOk && !bestAnswerMatch) currentIsBetter = true;
+                    }
                 } else if (!isBalanced && !bestBalanced) {
-                    currentIsBetter = true; // Just overwrite
+                    // Neither balanced: prefer partially better logic? Or just overwrite?
+                    // Let's stick to balance improvement if possible, but for now simplest:
+                    if (orange < -bestOrangeScore) currentIsBetter = true;
                 }
             }
 
@@ -563,10 +629,12 @@ export const useProblemState = (initialData = {}) => {
                 bestGrid = cloneGrid(newGrid);
                 bestBalanceScore = isBalanced ? 100 : 0;
                 bestOrangeScore = -orange;
+                bestAnswerMatch = isAnsMinOk;
             }
 
-            // Early Exit: If we found a Perfect Grid (Balanced AND Orange <= 2)
-            if (bestBalanceScore === 100 && bestOrangeScore >= -2) {
+            // Early Exit: If we found a Perfect Grid (Balanced AND Orange <= 2 AND AnsMinOk)
+            // (If answerMin is null, isAnsMinOk is always true)
+            if (bestBalanceScore === 100 && bestOrangeScore >= -2 && bestAnswerMatch) {
                 break;
             }
 
@@ -607,43 +675,259 @@ export const useProblemState = (initialData = {}) => {
             }
         }
 
-        // Helper to check validity of a cell (same as countOrangeCells logic but for a specific cell)
-        const isSafeToPlace = (g, r, c, val) => {
-            // Check row constraints (leading zero)
-            if (val === 0) {
-                // Check if it becomes leading zero
-                // Find first non-null column index for this row
-                let firstAudit = 0;
-                while (firstAudit < 13 && g[r][firstAudit] === null) firstAudit++;
-                if (c === firstAudit) return false;
-            }
 
-            // Check adjacent and gap duplicates
-            // Adjacent
-            if (c > 1) { // Left
-                const left = g[r][c - 1];
-                if (left !== null && left === val) return false;
-            }
-            if (c < 12) { // Right
-                const right = g[r][c + 1];
-                if (right !== null && right === val) return false;
-            }
-            // Gap
-            if (c > 2) { // Left gap
-                const left2 = g[r][c - 2];
-                if (left2 !== null && left2 === val) return false;
-            }
-            if (c < 11) { // Right gap
-                const right2 = g[r][c + 2];
-                if (right2 !== null && right2 === val) return false;
-            }
-            return true;
-        };
 
         while (performance.now() - optStartTime < CONSECITVE_OPT_TIME) {
-            // 1. Calculate current consecutive counts
+            // 1. Identify current status of Target Patterns
+            const protectedCells = new Set(); // Strings "r,c"
+
+            // --- CONSECUTIVE (CC) ---
+            if (consecutiveDigit !== null) {
+                const target = Number(consecutiveDigit);
+                const candidates = [];
+                for (let r = 0; r < n; r++) {
+                    const row = FinalGrid[r];
+                    const firstNonZero = row.findIndex(d => d !== null && d !== 0);
+                    for (let c = 0; c < COL_COUNT - 1; c++) {
+                        if (firstNonZero === -1 || c < firstNonZero) continue;
+                        if (row[c] === target && row[c + 1] === target) {
+                            candidates.push({ r, c }); // Store start index
+                        }
+                    }
+                }
+                if (candidates.length > 0) {
+                    // Pick ONE random instance to protect
+                    const keep = candidates[Math.floor(Math.random() * candidates.length)];
+                    protectedCells.add(`${keep.r},${keep.c}`);
+                    protectedCells.add(`${keep.r},${keep.c + 1}`);
+                }
+            }
+
+            // --- ENCLOSED / SANDWICHED (ESE) ---
+            if (enclosedDigit !== null && sandwichedDigit !== null) {
+                const E = Number(enclosedDigit);
+                const S = Number(sandwichedDigit);
+                const candidates = [];
+                for (let r = 0; r < n; r++) {
+                    const row = FinalGrid[r];
+                    const firstNonZero = row.findIndex(d => d !== null && d !== 0);
+                    for (let c = 1; c < COL_COUNT - 1; c++) {
+                        if (firstNonZero === -1 || c <= firstNonZero) continue;
+                        if (row[c - 1] === E && row[c] === S && row[c + 1] === E) {
+                            candidates.push({ r, c }); // Store center index
+                        }
+                    }
+                }
+                if (candidates.length > 0) {
+                    const keep = candidates[Math.floor(Math.random() * candidates.length)];
+                    protectedCells.add(`${keep.r},${keep.c - 1}`);
+                    protectedCells.add(`${keep.r},${keep.c}`);
+                    protectedCells.add(`${keep.r},${keep.c + 1}`);
+                }
+            }
+
+            // 2. Proactive Fixing (Try to form targets if missing)
+            let fixActionTaken = false;
+
+            // --- Fix: Enclosed Combo (ESE) ---
+            if (enclosedDigit !== null && sandwichedDigit !== null) {
+                const E = Number(enclosedDigit);
+                const S = Number(sandwichedDigit);
+                let eseCount = 0;
+                for (let r = 0; r < n; r++) {
+                    const row = FinalGrid[r];
+                    const firstNonZero = row.findIndex(d => d !== null && d !== 0);
+                    for (let c = 1; c < COL_COUNT - 1; c++) {
+                        if (firstNonZero === -1 || c <= firstNonZero) continue;
+                        if (FinalGrid[r][c - 1] === E && FinalGrid[r][c] === S && FinalGrid[r][c + 1] === E) eseCount++;
+                    }
+                }
+
+                if (eseCount === 0) {
+                    // Strategy A: ExE -> ESE
+                    for (let attempt = 0; attempt < 20; attempt++) {
+                        let r = Math.floor(Math.random() * n);
+                        const firstNonZero = FinalGrid[r].findIndex(d => d !== null && d !== 0);
+                        let c = Math.floor(Math.random() * (COL_COUNT - 2)) + 1; // 1..11
+                        if (firstNonZero === -1 || c <= firstNonZero) continue;
+                        // Check for ExE
+                        if (FinalGrid[r][c - 1] === E && FinalGrid[r][c + 1] === E && FinalGrid[r][c] !== S) {
+                            if (!lockedCells.has(`${r},${c}`)) {
+                                // Try to swap FinalGrid[r][c] with an S from elsewhere
+                                // Find an S
+                                let sList = [];
+                                for (let rr = 0; rr < n; rr++) for (let cc = 0; cc < COL_COUNT; cc++) {
+                                    if (FinalGrid[rr][cc] === S && !lockedCells.has(`${rr},${cc}`)) sList.push({ r: rr, c: cc });
+                                }
+                                if (sList.length > 0) {
+                                    let swapSrc = sList[Math.floor(Math.random() * sList.length)];
+                                    // Swap swapSrc (S) <-> (r,c) (x)
+                                    let valX = FinalGrid[r][c];
+                                    let valS = FinalGrid[swapSrc.r][swapSrc.c]; // S
+
+                                    if (isSafeToPlace(FinalGrid, swapSrc.r, swapSrc.c, valX) &&
+                                        // For ESE, checking isSafeToPlace(S at target) is tricky because E_E gap is invalid for E, not S.
+                                        // But S is adjacent to E? No issue.
+                                        isSafeToPlace(FinalGrid, r, c, valS)) {
+
+                                        FinalGrid[r][c] = valS;
+                                        FinalGrid[swapSrc.r][swapSrc.c] = valX;
+                                        fixActionTaken = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (fixActionTaken) break;
+                    }
+
+                    // Strategy B: ESx / xSE -> ESE
+                    if (!fixActionTaken) {
+                        for (let attempt = 0; attempt < 20; attempt++) {
+                            let r = Math.floor(Math.random() * n);
+                            const firstNonZero = FinalGrid[r].findIndex(d => d !== null && d !== 0);
+                            let c = Math.floor(Math.random() * (COL_COUNT - 2)) + 1; // 1..11
+                            if (firstNonZero === -1 || c <= firstNonZero) continue;
+                            // Case 1: E S x (Missing E at right)
+                            if (FinalGrid[r][c - 1] === E && FinalGrid[r][c] === S && FinalGrid[r][c + 1] !== E) {
+                                let targetC = c + 1;
+                                if (!lockedCells.has(`${r},${targetC}`)) {
+                                    let eList = [];
+                                    for (let rr = 0; rr < n; rr++) for (let cc = 0; cc < COL_COUNT; cc++) {
+                                        if (FinalGrid[rr][cc] === E && !lockedCells.has(`${rr},${cc}`)) eList.push({ r: rr, c: cc });
+                                    }
+                                    if (eList.length > 0) {
+                                        let swapSrc = eList[Math.floor(Math.random() * eList.length)];
+                                        let valX = FinalGrid[r][targetC];
+                                        let valE = FinalGrid[swapSrc.r][swapSrc.c];
+
+                                        let okAtTarget = true;
+                                        if (targetC > 1 && FinalGrid[r][targetC - 1] === valE) okAtTarget = false;
+                                        if (targetC < 12 && FinalGrid[r][targetC + 1] === valE) okAtTarget = false;
+                                        if (targetC < 11 && FinalGrid[r][targetC + 2] === valE) okAtTarget = false;
+                                        // Ignore gap left (c-1), as that creates the match.
+
+                                        if (okAtTarget && isSafeToPlace(FinalGrid, swapSrc.r, swapSrc.c, valX)) {
+                                            FinalGrid[r][targetC] = valE;
+                                            FinalGrid[swapSrc.r][swapSrc.c] = valX;
+                                            fixActionTaken = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            // Case 2: x S E (Missing E at left)
+                            if (FinalGrid[r][c - 1] !== E && FinalGrid[r][c] === S && FinalGrid[r][c + 1] === E) {
+                                let targetC = c - 1;
+                                if (!lockedCells.has(`${r},${targetC}`)) {
+                                    let eList = [];
+                                    for (let rr = 0; rr < n; rr++) for (let cc = 0; cc < COL_COUNT; cc++) {
+                                        if (FinalGrid[rr][cc] === E && !lockedCells.has(`${rr},${cc}`)) eList.push({ r: rr, c: cc });
+                                    }
+                                    if (eList.length > 0) {
+                                        let swapSrc = eList[Math.floor(Math.random() * eList.length)];
+                                        let valX = FinalGrid[r][targetC];
+                                        let valE = FinalGrid[swapSrc.r][swapSrc.c];
+
+                                        let okAtTarget = true;
+                                        if (targetC > 1 && FinalGrid[r][targetC - 1] === valE) okAtTarget = false;
+                                        if (targetC < 12 && FinalGrid[r][targetC + 1] === valE) okAtTarget = false;
+                                        if (targetC > 2 && FinalGrid[r][targetC - 2] === valE) okAtTarget = false;
+                                        // Ignore gap right (c+1), match.
+
+                                        if (okAtTarget && isSafeToPlace(FinalGrid, swapSrc.r, swapSrc.c, valX)) {
+                                            FinalGrid[r][targetC] = valE;
+                                            FinalGrid[swapSrc.r][swapSrc.c] = valX;
+                                            fixActionTaken = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } // End Enclosed Fix
+
+            // --- Fix: Consecutive (CC) ---
+            if (!fixActionTaken && consecutiveDigit !== null) {
+                const target = Number(consecutiveDigit);
+                let ccCount = 0;
+                for (let r = 0; r < n; r++) {
+                    const row = FinalGrid[r];
+                    const firstNonZero = row.findIndex(d => d !== null && d !== 0);
+                    for (let c = 0; c < COL_COUNT - 1; c++) {
+                        if (firstNonZero === -1 || c < firstNonZero) continue;
+                        if (FinalGrid[r][c] === target && FinalGrid[r][c + 1] === target) ccCount++;
+                    }
+                }
+
+                if (ccCount === 0) {
+                    let rowsWithMultipleC = [];
+                    for (let r = 0; r < n; r++) {
+                        let cIndices = [];
+                        for (let c = 0; c < COL_COUNT; c++) if (FinalGrid[r][c] === target) cIndices.push(c);
+                        if (cIndices.length >= 2) rowsWithMultipleC.push({ r, indices: cIndices });
+                    }
+
+                    if (rowsWithMultipleC.length > 0) {
+                        // Strategy A: Same Row Swap (Merge existing Cs)
+                        for (let item of rowsWithMultipleC) {
+                            let r = item.r;
+                            let cIdx1 = item.indices[0];
+                            let targetC = (cIdx1 < 12) ? cIdx1 + 1 : cIdx1 - 1;
+
+                            if (FinalGrid[r][targetC] !== target) {
+                                if (!lockedCells.has(`${r},${targetC}`)) {
+                                    let otherCIdx = item.indices.find(idx => idx !== cIdx1 && idx !== targetC);
+                                    let swapSrc = null;
+                                    if (otherCIdx !== undefined) {
+                                        swapSrc = { r: r, c: otherCIdx };
+                                    } else {
+                                        let cList = [];
+                                        for (let rr = 0; rr < n; rr++) for (let cc = 0; cc < COL_COUNT; cc++) {
+                                            if (FinalGrid[rr][cc] === target && !lockedCells.has(`${rr},${cc}`) && (rr !== r || cc !== targetC)) {
+                                                if (rr === r && cc === cIdx1) continue;
+                                                cList.push({ r: rr, c: cc });
+                                            }
+                                        }
+                                        if (cList.length > 0) swapSrc = cList[Math.floor(Math.random() * cList.length)];
+                                    }
+
+                                    if (swapSrc) {
+                                        let valX = FinalGrid[r][targetC];
+                                        let valC = FinalGrid[swapSrc.r][swapSrc.c];
+
+                                        let okAtTarget = true;
+                                        if (targetC > cIdx1) { // Right side
+                                            if (targetC < 12 && FinalGrid[r][targetC + 1] === target) okAtTarget = false;
+                                        } else { // Left side
+                                            if (targetC > 0 && FinalGrid[r][targetC - 1] === target) okAtTarget = false;
+                                        }
+                                        if (targetC > 1 && FinalGrid[r][targetC - 2] === target) okAtTarget = false;
+                                        if (targetC < 11 && FinalGrid[r][targetC + 2] === target) okAtTarget = false;
+
+                                        if (okAtTarget && isSafeToPlace(FinalGrid, swapSrc.r, swapSrc.c, valX)) {
+                                            FinalGrid[r][targetC] = valC;
+                                            FinalGrid[swapSrc.r][swapSrc.c] = valX;
+                                            fixActionTaken = true;
+                                        }
+                                    }
+                                }
+                            }
+                            if (fixActionTaken) break;
+                        }
+                    } else {
+                        // Strategy B: Different Row logic (Fallback?)
+                        // Skipped for conciseness as Same Row is prioritized.
+                    }
+                }
+            }
+
+            if (fixActionTaken) continue;
+
             const counts = Array(10).fill(null).map(() => Array(10).fill(0));
-            const badPairs = []; // {d1, d2, count}
+            const badPairs = [];
 
             for (let r = 0; r < n; r++) {
                 const row = FinalGrid[r];
@@ -659,113 +943,91 @@ export const useProblemState = (initialData = {}) => {
             let maxCount = 0;
             for (let d1 = 0; d1 < 10; d1++) {
                 for (let d2 = 0; d2 < 10; d2++) {
-                    if (counts[d1][d2] >= 3) {
+                    if (counts[d1][d2] > maxCount) maxCount = counts[d1][d2];
+
+                    let threshold = 3;
+                    if (consecutiveDigit !== null && d1 === Number(consecutiveDigit) && d2 === Number(consecutiveDigit)) {
+                        threshold = 2; // Strict for target
+                    }
+                    if (counts[d1][d2] >= threshold) {
                         badPairs.push({ d1, d2, count: counts[d1][d2] });
                     }
-                    if (counts[d1][d2] > maxCount) maxCount = counts[d1][d2];
                 }
             }
 
-            if (maxCount <= 2) break; // All pairs count <= 2. Success!
+            if (maxCount <= 2 && badPairs.length === 0) {
+                // Good enough
+            }
 
-            if (badPairs.length === 0) break; // Should be covered by maxCount check, but safety.
+            if (badPairs.length > 0) {
+                badPairs.sort((a, b) => b.count - a.count);
+                const targetPair = badPairs[0];
 
-            // Sort bad pairs by count desc
-            badPairs.sort((a, b) => b.count - a.count);
-            const targetPair = badPairs[0]; // {d1, d2}
+                const instances = [];
+                for (let r = 0; r < n; r++) {
+                    const row = FinalGrid[r];
+                    for (let c = 0; c < COL_COUNT - 1; c++) {
+                        if (row[c] === targetPair.d1 && row[c + 1] === targetPair.d2) {
+                            if (protectedCells.has(`${r},${c}`) || protectedCells.has(`${r},${c + 1}`)) continue;
+                            if (lockedCells.has(`${r},${c}`) || lockedCells.has(`${r},${c + 1}`)) continue;
+                            instances.push({ r, c });
+                        }
+                    }
+                }
 
-            // Find all instances of this pair
-            const instances = [];
-            for (let r = 0; r < n; r++) {
-                const row = FinalGrid[r];
-                for (let c = 0; c < COL_COUNT - 1; c++) {
-                    if (row[c] === targetPair.d1 && row[c + 1] === targetPair.d2) {
-                        // Check if locked
-                        if (lockedCells.has(`${r},${c}`) || lockedCells.has(`${r},${c + 1}`)) continue;
-                        instances.push({ r, c });
+                if (instances.length > 0) {
+                    const inst = instances[Math.floor(Math.random() * instances.length)];
+                    const { r, c } = inst;
+
+                    for (let attempt = 0; attempt < 50; attempt++) {
+                        const targetOffset = Math.random() < 0.5 ? 0 : 1;
+                        const targetC = c + targetOffset;
+                        const currentVal = FinalGrid[r][targetC];
+
+                        const rr = Math.floor(Math.random() * n);
+                        const validCols = [];
+                        for (let k = 0; k < 13; k++) if (FinalGrid[rr][k] !== null) validCols.push(k);
+                        if (validCols.length === 0) continue;
+                        const rc = validCols[Math.floor(Math.random() * validCols.length)];
+
+                        if (r === rr && Math.abs(targetC - rc) <= 2) continue;
+                        if (lockedCells.has(`${rr},${rc}`)) continue;
+                        if (protectedCells.has(`${rr},${rc}`)) continue;
+
+                        const otherVal = FinalGrid[rr][rc];
+                        if (otherVal === currentVal) continue;
+
+                        if (!isSafeToPlace(FinalGrid, r, targetC, otherVal)) continue;
+                        if (!isSafeToPlace(FinalGrid, rr, rc, currentVal)) continue;
+
+                        let badImpact = false;
+                        if (targetC > 0) {
+                            const left = FinalGrid[r][targetC - 1];
+                            if (left !== null && counts[left][otherVal] >= 2) badImpact = true;
+                        }
+                        if (targetC < 12) {
+                            const right = FinalGrid[r][targetC + 1];
+                            if (right !== null && counts[otherVal][right] >= 2) badImpact = true;
+                        }
+
+                        if (rc > 0) {
+                            const left = FinalGrid[rr][rc - 1];
+                            if (left !== null && counts[left][currentVal] >= 2) badImpact = true;
+                        }
+                        if (rc < 12) {
+                            const right = FinalGrid[rr][rc + 1];
+                            if (right !== null && counts[currentVal][right] >= 2) badImpact = true;
+                        }
+
+                        if (badImpact) continue;
+
+                        FinalGrid[r][targetC] = otherVal;
+                        FinalGrid[rr][rc] = currentVal;
+                        break;
                     }
                 }
             }
-
-            if (instances.length === 0) break; // Can't fix remaining ones (locked)
-
-            // Pick a random instance to break
-            const inst = instances[Math.floor(Math.random() * instances.length)];
-            const { r, c } = inst;
-
-            let swapped = false;
-
-            // Limit attempts per loop
-            for (let attempt = 0; attempt < 50; attempt++) {
-                // Decide whether to swap d1 (index c) or d2 (index c+1)
-                const targetOffset = Math.random() < 0.5 ? 0 : 1;
-                const targetC = c + targetOffset; // The cell we want to change
-                const currentVal = FinalGrid[r][targetC];
-
-                // Pick random other cell (rr, rc)
-                const rr = Math.floor(Math.random() * n);
-                // Find valid columns in that row
-                const validCols = [];
-                for (let k = 0; k < 13; k++) if (FinalGrid[rr][k] !== null) validCols.push(k);
-                if (validCols.length === 0) continue;
-                const rc = validCols[Math.floor(Math.random() * validCols.length)];
-
-                // Avoid self-swap or swapping too close (simplicity)
-                if (r === rr && Math.abs(targetC - rc) <= 2) continue;
-                if (lockedCells.has(`${rr},${rc}`)) continue;
-
-                const otherVal = FinalGrid[rr][rc];
-                if (otherVal === currentVal) continue;
-
-                // Check validity of placing otherVal at (r, targetC)
-                if (!isSafeToPlace(FinalGrid, r, targetC, otherVal)) continue;
-
-                // Check validity of placing currentVal at (rr, rc)
-                if (!isSafeToPlace(FinalGrid, rr, rc, currentVal)) continue;
-
-                // Check Consecutive Impact (prevent creating NEW bad pairs)
-                let badImpact = false;
-
-                // Check neighbors of (r, targetC) with otherVal
-                if (targetC > 0) {
-                    const left = FinalGrid[r][targetC - 1];
-                    if (left !== null && counts[left][otherVal] >= 2) badImpact = true;
-                }
-                if (targetC < 12) {
-                    const right = FinalGrid[r][targetC + 1];
-                    if (right !== null && counts[otherVal][right] >= 2) badImpact = true;
-                }
-
-                // Check neighbors of (rr, rc) with currentVal
-                if (rc > 0) {
-                    const left = FinalGrid[rr][rc - 1];
-                    if (left !== null && counts[left][currentVal] >= 2) badImpact = true;
-                }
-                if (rc < 12) {
-                    const right = FinalGrid[rr][rc + 1];
-                    if (right !== null && counts[currentVal][right] >= 2) badImpact = true;
-                }
-
-                if (badImpact) continue;
-
-                // Apply Swap
-                FinalGrid[r][targetC] = otherVal;
-                FinalGrid[rr][rc] = currentVal;
-                swapped = true;
-                break;
-            }
         }
-
-        // --- 3. Answer Constraints ---
-        const calculateSum = (g) => {
-            let sum = 0;
-            for (let r = 0; r < n; r++) {
-                let rowStr = g[r].map(d => d ?? 0).join('');
-                let val = parseInt(rowStr, 10) * (nextMinusRows[r] ? -1 : 1);
-                sum += val;
-            }
-            return sum;
-        };
 
         if (answerMax !== null) {
             let currentSum = calculateSum(FinalGrid);
@@ -788,44 +1050,14 @@ export const useProblemState = (initialData = {}) => {
             }
         }
 
-        if (answerMin !== null) {
-            let currentSum = calculateSum(FinalGrid);
-            let absSum = Math.abs(currentSum);
-            let sumStr = absSum.toString();
-            let currentMSD = parseInt(sumStr[0], 10);
-            let targetMSD = answerMin;
-            if (currentMSD !== targetMSD && targetMSD !== 0) {
-                let power = Math.pow(10, sumStr.length - 1);
-                let diffVal = (targetMSD - currentMSD) * power;
-                let candidateRows = [];
-                for (let r = 0; r < n; r++) {
-                    if (r === 0 && firstRowMin !== null) continue;
-                    if (r === n - 1 && lastRowMin !== null) continue;
-                    candidateRows.push(r);
-                }
-                if (candidateRows.length > 0) {
-                    let colIdx = 12 - (sumStr.length - 1);
-                    if (colIdx >= 0 && colIdx <= 12) {
-                        let rIdx = candidateRows[Math.floor(Math.random() * candidateRows.length)];
-                        let row = FinalGrid[rIdx];
-                        let val = row[colIdx];
-                        let change = targetMSD - currentMSD;
-                        let newVal = val + change;
-                        if (newVal >= 0 && newVal <= 9) {
-                            row[colIdx] = newVal;
-                        } else {
-                            row[colIdx] = Math.max(1, Math.min(9, newVal));
-                        }
-                    }
-                }
-            }
-        }
+
+
 
         setGrid(FinalGrid);
         setIsMinusRows(nextMinusRows);
     }, [minDigit, maxDigit, rowCount, targetTotalDigits, generateRandomRow,
         firstRowMin, firstRowMax, lastRowMin, lastRowMax, answerMin, answerMax, isMinusAllowed,
-        plusOneDigit, minusOneDigit]);
+        plusOneDigit, minusOneDigit, enclosedDigit, sandwichedDigit, consecutiveDigit]);
 
     const generateRandomGrid = useCallback(() => {
         setIsGenerating(true);
