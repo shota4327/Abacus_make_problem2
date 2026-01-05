@@ -24,7 +24,7 @@
 
 .condition-table {
     width: 100%;
-    min-width: 850px;
+    min-width: 910px;
     table-layout: fixed;
     border-collapse: collapse;
     font-size: 0.9rem;
@@ -203,4 +203,26 @@
 .cell-btn.half {
     width: 32px;
     padding: 0;
+}
+
+/* Random Column Styles */
+.condition-table th.random-col-header {
+    width: 60px;
+    min-width: 60px;
+    background: #fff1f2;
+    color: #e11d48;
+    border-bottom: 2px solid var(--border-color);
+    z-index: 2;
+}
+
+.random-row-btn {
+    font-weight: bold;
+    background: #fff1f2;
+    color: #e11d48;
+    border-color: #fecdd3;
+}
+
+.random-row-btn:hover {
+    background: #ffe4e6;
+    border-color: #fda4af;
 }

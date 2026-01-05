@@ -24,7 +24,7 @@ const ConditionManager = ({ problems, onUpdate }) => {
         { label: '＋１文字', key: 'plusOneDigit', options: digitOptions, isNullable: true },
         { label: '－１文字', key: 'minusOneDigit', options: digitOptions, isNullable: true },
         { label: '囲み文字', key: 'enclosedDigit', options: digitOptions, isNullable: true, warnKey: 'isEnclosedUsed' },
-        { label: 'はさまれ', key: 'sandwichedDigit', options: digitOptions, isNullable: true, warnKey: 'isSandwichedUsed' },
+        { label: 'はさまれ文字', key: 'sandwichedDigit', options: digitOptions, isNullable: true, warnKey: 'isSandwichedUsed' },
         { label: '連続文字', key: 'consecutiveDigit', options: digitOptions, isNullable: true, warnKey: 'isConsecutiveUsed' },
         {
             label: '1口目',
@@ -80,6 +80,157 @@ const ConditionManager = ({ problems, onUpdate }) => {
         setActiveSelector(null);
     };
 
+    const handleRandomRow = (rowConfig) => {
+        // Logic specific to each row type requested
+        if (rowConfig.key === 'targetTotalDigits') {
+            // 120 and 140: 1 or 2 each (balanced). Rest 130.
+            const count = Math.random() < 0.5 ? 1 : 2;
+            const count120 = count;
+            const count140 = count;
+            const count130 = 10 - count120 - count140;
+
+            const values = [
+                ...Array(count120).fill(120),
+                ...Array(count140).fill(140),
+                ...Array(count130).fill(130)
+            ];
+
+            // Shuffle
+            for (let i = values.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [values[i], values[j]] = [values[j], values[i]];
+            }
+
+            problems.forEach((p, i) => {
+                onUpdate(i, { ...p, targetTotalDigits: values[i] });
+            });
+        }
+        else if (rowConfig.key === 'rowCount') {
+            // Random 10-20. Must include at least one 20.
+            const opts = rowConfig.options; // 10..20
+            const values = Array(10).fill(0).map(() => opts[Math.floor(Math.random() * opts.length)]);
+
+            if (!values.includes(20)) {
+                values[Math.floor(Math.random() * 10)] = 20;
+            }
+
+            problems.forEach((p, i) => {
+                onUpdate(i, { ...p, rowCount: values[i] });
+            });
+        }
+        else if (rowConfig.key === 'digits') { // Range row for digits
+            // Min/Max from lengths [5..12]. Min <= Max.
+            // Constraint: maxDigit >= targetTotalDigits / rowCount
+            const opts = rowConfig.minConfig.options;
+
+            problems.forEach((p, i) => {
+                const avg = p.targetTotalDigits / p.rowCount;
+                const minAllowedMax = Math.ceil(avg);
+                const maxAllowedMin = Math.floor(avg);
+
+                let validMaxOpts = opts.filter(o => o >= minAllowedMax);
+                if (validMaxOpts.length === 0) validMaxOpts = [Math.max(...opts)];
+
+                let validMinOpts = opts.filter(o => o <= maxAllowedMin);
+                if (validMinOpts.length === 0) validMinOpts = [Math.min(...opts)];
+
+                const valMaxCandidate = validMaxOpts[Math.floor(Math.random() * validMaxOpts.length)];
+                const valMinCandidate = validMinOpts[Math.floor(Math.random() * validMinOpts.length)];
+
+                onUpdate(i, {
+                    ...p,
+                    minDigit: Math.min(valMinCandidate, valMaxCandidate),
+                    maxDigit: Math.max(valMinCandidate, valMaxCandidate)
+                });
+            });
+        }
+        else if (['plusOneDigit', 'minusOneDigit', 'enclosedDigit', 'sandwichedDigit', 'consecutiveDigit'].includes(rowConfig.key)) {
+            // 0-9 random PERMUTATION for the 10 problems.
+            // Constraints: must not match pair value.
+
+            let excludeKeys = [];
+            if (rowConfig.key === 'plusOneDigit') excludeKeys = ['minusOneDigit'];
+            else if (rowConfig.key === 'minusOneDigit') excludeKeys = ['plusOneDigit'];
+            else if (rowConfig.key === 'enclosedDigit') excludeKeys = ['sandwichedDigit', 'consecutiveDigit'];
+            else if (rowConfig.key === 'sandwichedDigit') excludeKeys = ['enclosedDigit', 'consecutiveDigit'];
+            else if (rowConfig.key === 'consecutiveDigit') excludeKeys = ['enclosedDigit', 'sandwichedDigit'];
+
+            // Get current values of pair/group to avoid collisions
+            // excludeValsPerProblem[i] is an array of values to avoid for problem i
+            const excludeValsPerProblem = problems.map(p => excludeKeys.map(k => p[k]));
+
+            const baseValues = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+            let bestValues = [...baseValues];
+            let minConflicts = 11;
+
+            // Try to find a permutation with 0 conflicts
+            for (let attempt = 0; attempt < 100; attempt++) {
+                // Shuffle
+                const current = [...baseValues];
+                for (let i = current.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [current[i], current[j]] = [current[j], current[i]];
+                }
+
+                // Check conflicts
+                let conflicts = 0;
+                if (excludeKeys.length > 0) {
+                    for (let i = 0; i < problems.length; i++) {
+                        if (i < current.length && excludeValsPerProblem[i].includes(current[i])) {
+                            conflicts++;
+                        }
+                    }
+                }
+
+                if (conflicts === 0) {
+                    bestValues = current;
+                    minConflicts = 0;
+                    break;
+                }
+
+                if (conflicts < minConflicts) {
+                    minConflicts = conflicts;
+                    bestValues = current;
+                }
+            }
+
+            problems.forEach((p, i) => {
+                if (i < bestValues.length) {
+                    onUpdate(i, { ...p, [rowConfig.key]: bestValues[i] });
+                }
+            });
+        }
+        else if (['firstRow', 'lastRow', 'answer'].includes(rowConfig.key)) {
+            // Left (Min): 1-9 + 1 duplicate (total 10).
+            // Right (Max): 0-9 (total 10).
+
+            const baseMin = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+            const invalidVar = baseMin[Math.floor(Math.random() * baseMin.length)];
+            const minValues = [...baseMin, invalidVar]; // naming variable 'invalidVar' is unintentional, using 'extra' logic
+
+            // Shuffle Min
+            for (let i = minValues.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [minValues[i], minValues[j]] = [minValues[j], minValues[i]];
+            }
+
+            const maxValues = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+            // Shuffle Max
+            for (let i = maxValues.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [maxValues[i], maxValues[j]] = [maxValues[j], maxValues[i]];
+            }
+
+            problems.forEach((p, i) => {
+                onUpdate(i, {
+                    ...p,
+                    [rowConfig.minConfig.key]: minValues[i],
+                    [rowConfig.maxConfig.key]: maxValues[i]
+                });
+            });
+        }
+    };
+
     return (
         <div className="condition-manager-container">
             <h2 className="manager-title">作問条件一覧</h2>
@@ -93,6 +244,7 @@ const ConditionManager = ({ problems, onUpdate }) => {
                                     第{i + 1}問
                                 </th>
                             ))}
+                            <th className="random-col-header">ランダム</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -229,6 +381,19 @@ const ConditionManager = ({ problems, onUpdate }) => {
                                         </td>
                                     );
                                 })}
+                                {/* Random Column Cell */}
+                                <td className="cell-wrapper random-col">
+                                    {!rowConfig.readOnly && (
+                                        <div className="cell-container">
+                                            <button
+                                                className="cell-btn random-row-btn"
+                                                onClick={() => handleRandomRow(rowConfig)}
+                                            >
+                                                R
+                                            </button>
+                                        </div>
+                                    )}
+                                </td>
                             </tr>
                         ))}
                     </tbody>
