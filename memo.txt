@@ -1,0 +1,10 @@
+開発環境の立ち上げ(再起動ごとに毎回)
+cd abacus_app
+npm run dev
+
+開発環境のURL
+http://localhost:5173/
+
+index.htmlにまとめる作業
+cd abacus_app
+npm run build
