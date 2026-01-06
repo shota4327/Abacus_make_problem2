@@ -600,41 +600,40 @@ export const useProblemState = (initialData = {}) => {
                 if (s[0] !== String(answerMin)) isAnsMinOk = false;
             }
 
+            // Calculate Balance Score (Negative of total error magnitude)
+            // Higher is better (0 is perfect)
+            const currentBalanceScore = -diff2.reduce((acc, val) => acc + Math.abs(val), 0);
+
             // Compare with global best
             let currentIsBetter = false;
 
             if (bestGrid === null) {
                 currentIsBetter = true;
             } else {
-                const bestBalanced = (bestBalanceScore === 100);
-
-                if (isBalanced && !bestBalanced) {
+                // Priority 1: Balance (Closer to 0 is better)
+                if (currentBalanceScore > bestBalanceScore) {
                     currentIsBetter = true;
-                } else if (isBalanced && bestBalanced) {
-                    // Both balanced: prefer fewer orange cells
+                } else if (currentBalanceScore === bestBalanceScore) {
+                    // Priority 2: Orange Cells (Fewer is better -> Higher negative score)
                     if (orange < -bestOrangeScore) {
                         currentIsBetter = true;
                     } else if (orange === -bestOrangeScore) {
-                        // Tie-breaker: Answer Min
+                        // Priority 3: Answer Min Match
                         if (isAnsMinOk && !bestAnswerMatch) currentIsBetter = true;
                     }
-                } else if (!isBalanced && !bestBalanced) {
-                    // Neither balanced: prefer partially better logic? Or just overwrite?
-                    // Let's stick to balance improvement if possible, but for now simplest:
-                    if (orange < -bestOrangeScore) currentIsBetter = true;
                 }
             }
 
             if (currentIsBetter) {
                 bestGrid = cloneGrid(newGrid);
-                bestBalanceScore = isBalanced ? 100 : 0;
+                bestBalanceScore = currentBalanceScore;
                 bestOrangeScore = -orange;
                 bestAnswerMatch = isAnsMinOk;
             }
 
-            // Early Exit: If we found a Perfect Grid (Balanced AND Orange <= 2 AND AnsMinOk)
-            // (If answerMin is null, isAnsMinOk is always true)
-            if (bestBalanceScore === 100 && bestOrangeScore >= -2 && bestAnswerMatch) {
+            // Early Exit: If we found a Perfect Grid (Perfect Balance AND Low Orange AND AnsMinOk)
+            // Note: bestBalanceScore === 0 means sum(abs(diff)) === 0, i.e., perfect balance.
+            if (bestBalanceScore === 0 && bestOrangeScore >= -2 && bestAnswerMatch) {
                 break;
             }
 

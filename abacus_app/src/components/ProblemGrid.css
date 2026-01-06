@@ -1,12 +1,16 @@
 .problem-area {
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    /* Prevent double scrollbar with .panel */
 }
 
 .grid-container {
     flex: 1;
     overflow-y: auto;
     font-family: monospace;
+    scrollbar-gutter: stable;
+    /* Reserve space for scrollbar to prevent layout shift */
 }
 
 .grid-header-spacer {

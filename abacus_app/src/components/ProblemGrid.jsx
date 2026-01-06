@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './ProblemGrid.css';
 
-const ProblemGrid = ({ grid, updateDigit, isMinusRows, toggleRowMinus, totalSum, generateRandomGrid, isMinusAllowed, setIsMinusAllowed }) => {
+const ProblemGrid = ({ grid, updateDigit, rowCount, isMinusRows, toggleRowMinus, totalSum, generateRandomGrid, isMinusAllowed, setIsMinusAllowed }) => {
     const [activeCell, setActiveCell] = useState(null); // {row, col}
 
     const handleCellClick = (row, col) => {
@@ -21,7 +21,7 @@ const ProblemGrid = ({ grid, updateDigit, isMinusRows, toggleRowMinus, totalSum,
             <h2>問題作成エリア</h2>
             <div className="grid-container">
                 <div className="grid-header-spacer"></div>
-                {grid.map((row, rowIndex) => {
+                {grid.slice(0, rowCount).map((row, rowIndex) => {
                     const firstNonZeroIndex = row.findIndex(d => d !== null && d !== 0);
                     const isMinus = isMinusRows?.[rowIndex];
                     return (
