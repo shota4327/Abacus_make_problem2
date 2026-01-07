@@ -28,7 +28,8 @@ const MultiplicationContainer = () => {
         rowDigitCountsRight,
         totalRowDigitsRight,
 
-        consecutive
+        consecutive,
+        generateRandomProblems
     } = useMultiplicationState();
 
     // FrequencyCounter expects specific props. 
@@ -52,6 +53,7 @@ const MultiplicationContainer = () => {
                         problems={problems}
                         updateDigit={updateDigit}
                         toggleDecimal={toggleDecimal}
+                        generateRandomProblems={generateRandomProblems}
                     />
                 </div>
 

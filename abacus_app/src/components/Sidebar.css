@@ -10,7 +10,19 @@
     box-sizing: border-box;
 }
 
-
+.sidebar-title {
+    margin-top: 0;
+    margin-bottom: 5px;
+    font-size: 1.5rem;
+    /* Explicitly set if needed, or rely on h2 default but maybe check if it needs to match others? User said "similar to multiplication area" which kept default size but reduced margin.*/
+    text-align: center;
+    /* Generally sidebars might be centered? Original Multiplication.css had centered but then reverted text-align? */
+    /* Wait, user said "like multiplication area". The multiplication area header rule is:
+       margin-top: 0; margin-bottom: 5px; 
+       And previously reverted font-size/text-align. So I should just touch margins. 
+       But sidebar title usually wants to be centered? Let's stick to margins first.
+    */
+}
 
 .sidebar-buttons {
     display: flex;

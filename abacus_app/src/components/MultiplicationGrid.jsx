@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './ProblemGrid.css'; // Reusing existing grid styles where applicable + new specific ones
 
-const MultiplicationGrid = ({ problems, updateDigit, toggleDecimal }) => {
+const MultiplicationGrid = ({ problems, updateDigit, toggleDecimal, generateRandomProblems }) => {
     // activeCell: { problemIndex, side ('left'|'right'), colIndex }
     const [activeCell, setActiveCell] = useState(null);
 
@@ -180,6 +180,11 @@ const MultiplicationGrid = ({ problems, updateDigit, toggleDecimal }) => {
                         </div>
                     );
                 })}
+            </div>
+            <div className="grid-footer">
+                <button className="generate-btn" onClick={generateRandomProblems}>
+                    再生成
+                </button>
             </div>
         </div>
     );

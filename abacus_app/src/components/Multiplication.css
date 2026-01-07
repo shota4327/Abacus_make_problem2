@@ -2,6 +2,9 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
+    height: 100%;
+    /* Fill content-area */
+    box-sizing: border-box;
 }
 
 .multiplication-grid {
@@ -245,6 +248,10 @@
     /* Remove overflow-x: auto to force fit, relying on flex-shrink/scaling */
     box-sizing: border-box;
     padding: 0 5px;
+    flex: 1;
+    /* Take remaining vertical space */
+    overflow: hidden;
+    /* Prevent container scroll, panels handle it */
 }
 
 .layout-column {
@@ -258,6 +265,17 @@
 .area-grid {
     flex: 0 0 auto;
     /* Grid might not shrink well, keep it auto or specific width if possible */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    /* Force full height */
+}
+
+.area-grid .panel {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
 }
 
 .area-stats-all,

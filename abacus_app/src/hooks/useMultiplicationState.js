@@ -41,6 +41,34 @@ export const useMultiplicationState = () => {
         });
     }, []);
 
+    const generateRandomProblems = useCallback(() => {
+        setProblems(prev => prev.map(() => {
+            // Generate random 2-4 digit integers for now
+            const lenLeft = Math.floor(Math.random() * 3) + 2; // 2, 3, or 4
+            const lenRight = Math.floor(Math.random() * 3) + 2;
+
+            const newLeft = Array(7).fill(null);
+            for (let i = 0; i < lenLeft; i++) {
+                newLeft[i] = Math.floor(Math.random() * 10);
+            }
+            // Avoid leading zero for cleaner numbers
+            if (newLeft[0] === 0) newLeft[0] = Math.floor(Math.random() * 9) + 1;
+
+            const newRight = Array(7).fill(null);
+            for (let i = 0; i < lenRight; i++) {
+                newRight[i] = Math.floor(Math.random() * 10);
+            }
+            if (newRight[0] === 0) newRight[0] = Math.floor(Math.random() * 9) + 1;
+
+            return {
+                left: newLeft,
+                right: newRight,
+                decimalLeft: null,
+                decimalRight: null
+            };
+        }));
+    }, []);
+
     // --- Statistics ---
 
     // Helper to count digits in a set of arrays (treating null as 0 is NOT what we want for stats usually, 
@@ -186,6 +214,7 @@ export const useMultiplicationState = () => {
         rowDigitCountsRight,
         totalRowDigitsRight,
 
-        consecutive
+        consecutive,
+        generateRandomProblems
     };
 };
