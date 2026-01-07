@@ -1,0 +1,288 @@
+.multiplication-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.multiplication-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+}
+
+.multiplication-row {
+    display: flex;
+    align-items: flex-start;
+    /* Align to top to match digits row */
+    gap: 15px;
+    padding: 5px;
+    border-bottom: 1px solid #eee;
+}
+
+.digits-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 15px;
+    /* Increase space for lower hanging decimals */
+}
+
+.digits-row {
+    display: flex;
+    gap: 2px;
+    align-items: flex-end;
+    /* Align digits and decimal point */
+}
+
+/* .digits-row updated to allow overflow/visible or spacing? */
+/* Actually, standard .digits-row doesn't need change if we use margins on the group or row wrapper */
+
+.decimal-toggle-abs {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 1px solid #ccc;
+    background: #f0f0f0;
+    border-radius: 50%;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    /* Position exactly centered in the gap to the right */
+    /* Digit width ~20px. Gap 2px usually. Separators add more. */
+    /* right: -10px puts it roughly 10px from the right edge of content. */
+    /* Since we want it centered between this digit and next, and standard pitch is ~22px, */
+    /* -10px is halfway to next digit start (0px is right edge, +2px gap + ~10px half digit). */
+    /* Actually we want it in the GAP. Gap is small (2px). */
+    /* Center of gap is +1px from right edge. */
+    /* Dimensions: 16px wide. Center is 8px. */
+    /* To put center at +1px: right = -(1px + 8px) = -9px (assuming gap is 2px). */
+    /* With separators (+5px gap space -> total 7px). Center is +3.5px. */
+    /* right = -(3.5px + 8px) = -11.5px. */
+    /* Let's pick -10px as a compromise. */
+    right: -10px;
+
+    /* Vertical positioning: Below the digit */
+    bottom: -20px;
+    /* Lower position as requested */
+    z-index: 50;
+    color: #333;
+}
+
+.decimal-toggle-abs:hover {
+    background-color: #ddd;
+}
+
+.decimal-toggle-abs.active {
+    background: #333;
+    color: #fff;
+}
+
+/* Ensure no clipping */
+.digit-btn-wrapper {
+    overflow: visible !important;
+}
+
+.decimal-toggle {
+    width: 20px;
+    height: 20px;
+    border: 1px solid #ccc;
+    background: #f0f0f0;
+    border-radius: 50%;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    visibility: visible;
+}
+
+.decimal-toggle:hover {
+    background-color: #ddd;
+}
+
+.decimal-toggle.active {
+    background: #333;
+    color: #fff;
+}
+
+.operator {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #555;
+    margin: 0 5px;
+    line-height: 24px;
+    /* Match digit button height */
+    height: 24px;
+    /* Explicit height */
+    display: flex;
+    align-items: center;
+    /* Center text vertically in this height */
+}
+
+.stats-area-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.split-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.stats-column {
+    flex: 1;
+    min-width: 300px;
+}
+
+.stats-column h3 {
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+    color: #444;
+}
+
+/* Override FrequencyTable styles for compact view if needed */
+.multiplication-container .frequency-table th,
+.multiplication-container .frequency-table td {
+    padding: 2px;
+    /* reduced padding */
+    font-size: 0.75rem;
+    /* reduced font size */
+    min-width: 15px;
+    /* reduce min width if set */
+}
+
+/* .multiplication-container .grid-row removed (was empty) */
+
+/* .multiplication-container .frequency-table:not(.consecutive-table) .row-label removed as row is hidden */
+
+.multiplication-container .frequency-table:not(.consecutive-table) .row-label,
+.multiplication-container .frequency-table:not(.consecutive-table) th:first-child {
+    width: 50px !important;
+    min-width: 50px !important;
+}
+
+/* Separator logic overrides for Multiplication (1-3-3 pattern for 7 digits) */
+/* Reset default 3-3-1 pattern from ProblemGrid.css */
+.multiplication-container .digit-btn-wrapper:nth-child(3n) {
+    border-right: none;
+    margin-right: 0;
+    padding-right: 0;
+}
+
+/* Apply 1-3-3 pattern: Separator after 1st (child 1) and 4th (child 4) digits */
+.multiplication-container .digit-btn-wrapper:nth-child(3n+1):not(:last-child) {
+    border-right: 1px solid #cbd5e1;
+    margin-right: 2px;
+    padding-right: 2px;
+}
+
+
+.multiplication-container .digit-btn {
+    width: 20px;
+    /* Force smaller size */
+    height: 24px;
+    font-size: 0.9rem;
+    padding: 0;
+}
+
+.multiplication-container .decimal-toggle {
+    width: 16px;
+    height: 16px;
+    font-size: 8px;
+}
+
+.multiplication-container .operator {
+    margin: 0 2px;
+    font-size: 1rem;
+}
+
+.multiplication-container .row-number {
+    font-size: 0.8rem;
+    width: 15px;
+    text-align: right;
+    margin-right: 5px;
+    line-height: 24px;
+    /* Align with digits */
+    line-height: 24px;
+    /* Align with digits */
+    margin-top: 0;
+}
+
+.multiplication-container .answer-group .digits-row {
+    align-items: center;
+    /* Center horizontally/vertically relative to height */
+    height: 24px;
+    /* Match height of other elements */
+}
+
+.multiplication-container .answer-placeholder {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #333;
+    line-height: 1;
+}
+
+.multiplication-container .answer-placeholder.round-up {
+    color: blue;
+}
+
+.multiplication-container .answer-placeholder.round-down {
+    color: red;
+}
+
+.multiplication-full-layout {
+    display: flex;
+    gap: 5px;
+    /* Reduced gap */
+    align-items: flex-start;
+    width: 100%;
+    /* Remove overflow-x: auto to force fit, relying on flex-shrink/scaling */
+    box-sizing: border-box;
+    padding: 0 5px;
+}
+
+.layout-column {
+    flex: 1;
+    /* Allow flexible sizing */
+    min-width: 0;
+    /* Allow shrinking below content size if needed */
+}
+
+/* Specific scaling or compacting for areas */
+.area-grid {
+    flex: 0 0 auto;
+    /* Grid might not shrink well, keep it auto or specific width if possible */
+}
+
+.area-stats-all,
+.area-consecutive {
+    flex: 1;
+}
+
+.area-mixed-stats,
+.area-stats-lr {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sub-stats-group h3,
+.layout-column h3 {
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+    color: #444;
+}
+
+.multiplication-container .panel h2 {
+    margin-top: 0;
+    margin-bottom: 5px;
+    /* font-size and text-align reverted to default as requested */
+}

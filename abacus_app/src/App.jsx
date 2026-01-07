@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import ProblemContainer from './components/ProblemContainer';
 import ConditionManager from './components/ConditionManager';
+import MultiplicationContainer from './components/MultiplicationContainer';
 import { createInitialProblemState } from './constants/initialState';
 import './index.css';
 
@@ -24,7 +25,9 @@ function App() {
     <div className="app-container">
       <Sidebar currentTab={currentTab} onTabChange={setCurrentTab} />
       <div className={`content-area ${currentTab === 'manager' ? 'manager-mode' : ''}`}>
-        {currentTab === 'manager' ? (
+        {currentTab === 'multiplication' ? (
+          <MultiplicationContainer />
+        ) : currentTab === 'manager' ? (
           <ConditionManager problems={problems} onUpdate={handleUpdate} />
         ) : (
           // Key ensures component remounts when tab changes, resetting internal hook state to initialData

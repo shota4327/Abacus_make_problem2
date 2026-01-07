@@ -10,7 +10,10 @@ const FrequencyCounter = ({
     targetTotalDigits,
     updateRowDigitCount,
     minDigit,
-    maxDigit
+    maxDigit,
+    title = "出現回数",
+    readOnlyDigitCount = false,
+    warnThreshold = 3
 }) => {
     const [activeSelector, setActiveSelector] = useState(null); // { rowIndex }
 
@@ -31,7 +34,7 @@ const FrequencyCounter = ({
 
     return (
         <div className="panel stats-panel">
-            <h2>出現回数</h2>
+            <h2>{title}</h2>
             <div className="frequency-table-container">
                 <table className="frequency-table">
                     <thead>
@@ -48,40 +51,48 @@ const FrequencyCounter = ({
                             <tr key={rowIndex}>
                                 <td className="row-label">{rowIndex + 1}</td>
                                 {rowFreq.map((count, num) => (
-                                    <td key={num} className={`${count >= 3 ? 'warn' : ''} ${num % 2 !== 0 ? 'highlight-orange-light' : ''}`}>
+                                    <td key={num} className={`${count >= warnThreshold ? 'warn' : ''} ${num % 2 !== 0 ? 'highlight-orange-light' : ''}`}>
                                         {count > 0 ? count : ''}
                                     </td>
                                 ))}
                                 <td className="digit-col-cell">
                                     <div className="digit-button-wrapper">
-                                        <button
-                                            className="digit-length-btn"
-                                            onClick={() => setActiveSelector(activeSelector?.rowIndex === rowIndex ? null : { rowIndex })}
-                                        >
-                                            {rowDigitCounts?.[rowIndex] || '-'}
-                                        </button>
-                                        {activeSelector?.rowIndex === rowIndex && (
+                                        {readOnlyDigitCount ? (
+                                            <span className="digit-count-text">
+                                                {rowDigitCounts?.[rowIndex] || '-'}
+                                            </span>
+                                        ) : (
                                             <>
-                                                <div className="digit-selector-backdrop" onClick={() => setActiveSelector(null)} />
-                                                <div className="length-selector-overlay">
-                                                    <div className="length-selector-grid">
-                                                        <button
-                                                            className="length-opt-btn random-btn"
-                                                            onClick={() => handleLengthSelect(rowIndex, lengths[Math.floor(Math.random() * lengths.length)])}
-                                                        >
-                                                            R
-                                                        </button>
-                                                        {lengths.map(len => (
-                                                            <button
-                                                                key={len}
-                                                                className="length-opt-btn"
-                                                                onClick={() => handleLengthSelect(rowIndex, len)}
-                                                            >
-                                                                {len}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
+                                                <button
+                                                    className="digit-length-btn"
+                                                    onClick={() => setActiveSelector(activeSelector?.rowIndex === rowIndex ? null : { rowIndex })}
+                                                >
+                                                    {rowDigitCounts?.[rowIndex] || '-'}
+                                                </button>
+                                                {activeSelector?.rowIndex === rowIndex && (
+                                                    <>
+                                                        <div className="digit-selector-backdrop" onClick={() => setActiveSelector(null)} />
+                                                        <div className="length-selector-overlay">
+                                                            <div className="length-selector-grid">
+                                                                <button
+                                                                    className="length-opt-btn random-btn"
+                                                                    onClick={() => handleLengthSelect(rowIndex, lengths[Math.floor(Math.random() * lengths.length)])}
+                                                                >
+                                                                    R
+                                                                </button>
+                                                                {lengths.map(len => (
+                                                                    <button
+                                                                        key={len}
+                                                                        className="length-opt-btn"
+                                                                        onClick={() => handleLengthSelect(rowIndex, len)}
+                                                                    >
+                                                                        {len}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                )}
                                             </>
                                         )}
                                     </div>
@@ -101,17 +112,19 @@ const FrequencyCounter = ({
                                 {totalRowDigits}
                             </td>
                         </tr>
-                        <tr className="diff-row">
-                            <td className="row-label">過不足</td>
-                            {frequencyDiffs?.map((diff, num) => (
-                                <td key={num} className={`${num % 2 !== 0 ? 'highlight-orange-light' : ''} ${diff > 0 ? 'pos' : diff < 0 ? 'neg' : ''}`}>
-                                    {diff > 0 ? `+${diff}` : diff}
+                        {frequencyDiffs && frequencyDiffs.length > 0 && (
+                            <tr className="diff-row">
+                                <td className="row-label">過不足</td>
+                                {frequencyDiffs.map((diff, num) => (
+                                    <td key={num} className={`${num % 2 !== 0 ? 'highlight-orange-light' : ''} ${diff > 0 ? 'pos' : diff < 0 ? 'neg' : ''}`}>
+                                        {diff > 0 ? `+${diff}` : diff}
+                                    </td>
+                                ))}
+                                <td className={`digit-col-cell ${totalDigitsDiff > 0 ? 'pos' : totalDigitsDiff < 0 ? 'neg' : ''}`}>
+                                    {totalDigitsDiff > 0 ? `+${totalDigitsDiff}` : totalDigitsDiff}
                                 </td>
-                            ))}
-                            <td className={`digit-col-cell ${totalDigitsDiff > 0 ? 'pos' : totalDigitsDiff < 0 ? 'neg' : ''}`}>
-                                {totalDigitsDiff > 0 ? `+${totalDigitsDiff}` : totalDigitsDiff}
-                            </td>
-                        </tr>
+                            </tr>
+                        )}
                     </tfoot>
                 </table>
             </div>
