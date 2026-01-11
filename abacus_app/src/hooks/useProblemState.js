@@ -1067,6 +1067,34 @@ export const useProblemState = (initialData = {}) => {
         }, 50);
     }, [generateRandomGridLogic]);
 
+    // Import state from CSV
+    const importState = useCallback((newState) => {
+        // newState: { grid, isMinusRows, rowCount, minDigit, maxDigit, targetTotalDigits, ... }
+        if (newState.grid) setGrid(newState.grid);
+        if (newState.isMinusRows) setIsMinusRows(newState.isMinusRows);
+        if (newState.rowCount !== undefined) setRowCount(newState.rowCount);
+        if (newState.minDigit !== undefined) setMinDigit(newState.minDigit);
+        if (newState.maxDigit !== undefined) setMaxDigit(newState.maxDigit);
+        if (newState.targetTotalDigits !== undefined) setTargetTotalDigits(newState.targetTotalDigits);
+        if (newState.isMinusAllowed !== undefined) setIsMinusAllowed(newState.isMinusAllowed);
+
+        // Optional conditions (handle null/undefined clearly)
+        // Using strict check for undefined to allow null updates
+        if (newState.plusOneDigit !== undefined) setPlusOneDigit(newState.plusOneDigit);
+        if (newState.minusOneDigit !== undefined) setMinusOneDigit(newState.minusOneDigit);
+        if (newState.enclosedDigit !== undefined) setEnclosedDigit(newState.enclosedDigit);
+        if (newState.sandwichedDigit !== undefined) setSandwichedDigit(newState.sandwichedDigit);
+        if (newState.consecutiveDigit !== undefined) setConsecutiveDigit(newState.consecutiveDigit);
+
+        if (newState.firstRowMin !== undefined) setFirstRowMin(newState.firstRowMin);
+        if (newState.firstRowMax !== undefined) setFirstRowMax(newState.firstRowMax);
+        if (newState.lastRowMin !== undefined) setLastRowMin(newState.lastRowMin);
+        if (newState.lastRowMax !== undefined) setLastRowMax(newState.lastRowMax);
+        if (newState.answerMin !== undefined) setAnswerMin(newState.answerMin);
+        if (newState.answerMax !== undefined) setAnswerMax(newState.answerMax);
+
+    }, []);
+
     return {
         grid, // Return full grid, let components handle display limit if needed
         minDigit,
@@ -1113,6 +1141,7 @@ export const useProblemState = (initialData = {}) => {
         isAnsMaxValid: stats.isAnsMaxValid,
         isMinusAllowed,
         setIsMinusAllowed,
-        currentState: stats.currentState // Expose currentState
+        currentState: stats.currentState,
+        importState // Expose new function
     };
 };

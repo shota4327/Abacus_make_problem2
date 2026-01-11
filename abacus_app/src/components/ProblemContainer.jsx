@@ -5,7 +5,7 @@ import ConsecutiveCounter from './ConsecutiveCounter';
 import ConditionPanel from './ConditionPanel';
 import { useProblemState } from '../hooks/useProblemState';
 
-const ProblemContainer = ({ initialData, onUpdate }) => {
+const ProblemContainer = ({ initialData, onUpdate, pageIndex }) => {
     // Initialize useProblemState with the passed data for this specific problem
     const {
         grid, updateDigit, rowCount,
@@ -35,7 +35,8 @@ const ProblemContainer = ({ initialData, onUpdate }) => {
         totalSum,
         consecutive, // Added
         isMinusRows, toggleRowMinus, // Added
-        currentState // New snapshot object
+        currentState, // New snapshot object
+        importState // New
     } = useProblemState(initialData);
 
     const onUpdateRef = useRef(onUpdate);
@@ -67,6 +68,14 @@ const ProblemContainer = ({ initialData, onUpdate }) => {
                 generateRandomGrid={generateRandomGrid}
                 isMinusAllowed={isMinusAllowed}
                 setIsMinusAllowed={setIsMinusAllowed}
+                pageIndex={pageIndex}
+                importState={importState}
+                // Also pass condition variables if needed for Export?
+                // ProblemGrid needs to read conditions for Export.
+                // Pass a big object "conditions" or individually.
+                // Let's pass a comprehensive "conditions" object or use "currentState" if exposed to ProblemGrid.
+                // Actually currentState is exposed in ProblemContainer scope, let's pass it.
+                currentConditions={currentState}
             />
 
             <FrequencyCounter

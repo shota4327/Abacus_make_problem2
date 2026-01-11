@@ -33,6 +33,7 @@ function App() {
           // Key ensures component remounts when tab changes, resetting internal hook state to initialData
           <ProblemContainer
             key={currentTab}
+            pageIndex={Number(currentTab) + 1}
             initialData={problems[currentTab]}
             onUpdate={(newState) => handleUpdate(currentTab, newState)}
           />
