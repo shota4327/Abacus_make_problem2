@@ -211,8 +211,23 @@
 
 .grid-footer {
     display: flex;
-    justify-content: center;
+    justify-content: center; /* Center the group */
     padding: 10px 0;
+    width: 100%;
+    position: relative;
+}
+
+.footer-left {
+    position: absolute;
+    left: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.footer-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .grid-footer .generate-btn {
@@ -224,8 +239,31 @@
     cursor: pointer;
     font-weight: bold;
     transition: opacity 0.2s;
+    height: 36px;
 }
 
 .grid-footer .generate-btn:hover {
     opacity: 0.9;
 }
+
+.csv-btn {
+    background-color: #10b981; /* Emerald 500 */
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: opacity 0.2s, background-color 0.2s;
+    height: 36px;
+}
+
+.csv-btn:hover {
+    opacity: 0.9;
+    background-color: #059669; /* Emerald 600 */
+}
+
+/* Make Import button slightly different? Or same style? */
+/* Using same style for consistency, or maybe secondary color for Import? */
+/* Let's keep them uniform as "Action Buttons" or differentiate Import. */
+/* If differentiation is needed, we can use :nth-child or specific classes, but kept simple for now. */

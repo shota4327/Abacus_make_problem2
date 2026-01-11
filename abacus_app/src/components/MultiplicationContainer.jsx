@@ -10,6 +10,7 @@ const MultiplicationContainer = () => {
         problems,
         updateDigit,
         toggleDecimal,
+        regenerateRow,
 
         frequencyAll,
         totalFrequencyAll,
@@ -29,19 +30,20 @@ const MultiplicationContainer = () => {
         totalRowDigitsRight,
 
         consecutive,
-        generateRandomProblems
+        generateRandomProblems,
+        replaceProblems
     } = useMultiplicationState();
 
-    // FrequencyCounter expects specific props. 
-    // We are reusing it, but it has some Mitorizan-specific logic (like minDigit/maxDigit for random selector).
-    // For now we will pass dummy update handlers or simplified ones if we want to support random digit count generation later.
-    // The current FrequencyCounter has a "digit-length-btn" that calls updateRowDigitCount.
-    // For Multiplication, if we want to control number of digits (4-7), we might strictly need that.
-    // However, the current req is just to "display" the counts.
-    // "出現回数と数字の数(桁数)を表示します" -> Display counts and number of digits.
+    // Handlers for updating row digit counts (regeneration)
+    const handleUpdateLeft = (rowIndex, length) => {
+        regenerateRow(rowIndex, 'left', length);
+    };
 
-    // We'll pass empty functions for updateRowDigitCount to prevent errors if clicked, or implement a dummy.
+    const handleUpdateRight = (rowIndex, length) => {
+        regenerateRow(rowIndex, 'right', length);
+    };
 
+    // No-op for "All" counter if needed, or null
     const noop = () => { };
 
     return (
@@ -54,6 +56,7 @@ const MultiplicationContainer = () => {
                         updateDigit={updateDigit}
                         toggleDecimal={toggleDecimal}
                         generateRandomProblems={generateRandomProblems}
+                        replaceProblems={replaceProblems}
                     />
                 </div>
 
@@ -86,9 +89,11 @@ const MultiplicationContainer = () => {
                             totalFrequency={totalFrequencyLeft}
                             rowDigitCounts={rowDigitCountsLeft}
                             totalRowDigits={totalRowDigitsLeft}
-                            updateRowDigitCount={noop}
+                            updateRowDigitCount={handleUpdateLeft}
                             frequencyDiffs={[]}
                             warnThreshold={2}
+                            minDigit={4}
+                            maxDigit={7}
                         />
                     </div>
                     <div className="sub-stats-group">
@@ -98,9 +103,11 @@ const MultiplicationContainer = () => {
                             totalFrequency={totalFrequencyRight}
                             rowDigitCounts={rowDigitCountsRight}
                             totalRowDigits={totalRowDigitsRight}
-                            updateRowDigitCount={noop}
+                            updateRowDigitCount={handleUpdateRight}
                             frequencyDiffs={[]}
                             warnThreshold={2}
+                            minDigit={4}
+                            maxDigit={7}
                         />
                     </div>
                 </div>

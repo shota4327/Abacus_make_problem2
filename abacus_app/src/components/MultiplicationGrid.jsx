@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import './ProblemGrid.css'; // Reusing existing grid styles where applicable + new specific ones
 
-const MultiplicationGrid = ({ problems, updateDigit, toggleDecimal, generateRandomProblems }) => {
+const MultiplicationGrid = ({ problems, updateDigit, toggleDecimal, generateRandomProblems, replaceProblems }) => {
     // activeCell: { problemIndex, side ('left'|'right'), colIndex }
     const [activeCell, setActiveCell] = useState(null);
+    const fileInputRef = useRef(null);
 
     const handleDigitSelect = (value, e) => {
         e.stopPropagation();
@@ -26,6 +27,158 @@ const MultiplicationGrid = ({ problems, updateDigit, toggleDecimal, generateRand
         if (str === "" || str === ".") return 0;
         return parseFloat(str);
     };
+
+    // --- CSV Helper Methods ---
+
+    // Format a single problem row into CSV string: A,B,Answer
+    const formatProblemToCSV = (prob) => {
+        const valA = calculateValue(prob.left, prob.decimalLeft);
+        const valB = calculateValue(prob.right, prob.decimalRight);
+        const ans = valA * valB;
+
+        // Fix precision issues
+        // Calculate expected max decimal places based on inputs
+        const getDecimals = (n) => {
+            if (Number.isInteger(n)) return 0;
+            const str = n.toString();
+            return str.includes('.') ? str.split('.')[1].length : 0;
+        };
+        const decimalsA = getDecimals(valA);
+        const decimalsB = getDecimals(valB);
+        const maxDecimals = decimalsA + decimalsB;
+
+        // Use toFixed to strictly limit decimals to the mathematical expectation
+        // parseFloat removes trailing zeros (e.g. "1.500" -> 1.5)
+        const cleanAns = parseFloat(ans.toFixed(maxDecimals));
+
+        return `${valA},${valB},${cleanAns}`;
+    };
+
+    const handleExportCSV = () => {
+        // Generate CSV content
+        // Header
+        const header = "被乗数,乗数,答え\n";
+        const rows = problems.map(prob => formatProblemToCSV(prob)).join("\n");
+        const csvContent = "\uFEFF" + header + rows; // Add BOM for Excel compatibility
+
+        // Create Blob and download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'multiplication_problems.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handleImportClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const parseNumberToDigits = (numStr) => {
+        // "12.3" -> digits=[..., 1, 2, 3], decimalRight=...
+        // "123" -> digits=[..., 1, 2, 3], decimalRight=null
+        const cleanStr = numStr.trim();
+        if (!cleanStr || cleanStr === '0') {
+            return { digits: Array(7).fill(null), decimal: null };
+        }
+
+        const hasDecimal = cleanStr.includes('.');
+        const digitsOnly = cleanStr.replace('.', '');
+
+        // Limit to last 7 digits if too long (though unlikely for valid problems)
+        // Taking last 7 ensures alignment
+        const effectiveDigitsStr = digitsOnly.slice(-7);
+
+        const newDigits = Array(7).fill(null);
+        const offset = 7 - effectiveDigitsStr.length;
+
+        for (let i = 0; i < effectiveDigitsStr.length; i++) {
+            newDigits[offset + i] = parseInt(effectiveDigitsStr[i], 10);
+        }
+
+        let decimalIndex = null;
+        if (hasDecimal) {
+            const dotPos = cleanStr.indexOf('.');
+            // Adjust dotPos relative to the 7-digit grid
+            // dotPos is index in cleanStr (e.g. 2 in "12.3")
+            // This means there are `dotPos` digits before the dot.
+            // These digits end at `offset + dotPos - 1`.
+            // So decimal is at `offset + dotPos - 1`.
+
+            // Correction: cleanStr might be longer than 7 digits?
+            // If we assume input fits in 7 digits (standard abacus problem).
+            // If cleanStr is "1000000.5" (8 chars + dot), digitsOnly is 8 chars. slice takes last 7.
+            // If we support that, decimal logic gets tricky.
+            // Assumption: Input fits in 7 digits.
+
+            decimalIndex = offset + dotPos - 1;
+
+            // Boundary checks
+            if (decimalIndex < 0) decimalIndex = null; // Should not happen for valid format
+            if (decimalIndex >= 6) decimalIndex = 6; // Cap at end? Decimal at 6 means after last digit.
+        }
+
+        return { digits: newDigits, decimal: decimalIndex };
+    };
+
+    const handleImportCSV = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const text = event.target.result;
+            const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
+
+            // Skip header if present
+            // Simple check: if first line contains "被乗数" or is non-numeric
+            let startIdx = 0;
+            if (lines.length > 0 && (lines[0].includes('被乗数') || isNaN(parseFloat(lines[0].split(',')[0])))) {
+                startIdx = 1;
+            }
+
+            const newProblems = [];
+            let count = 0;
+
+            for (let i = startIdx; i < lines.length && count < 10; i++) {
+                const cols = lines[i].split(',');
+                if (cols.length < 2) continue; // Need at least A and B
+
+                const strA = cols[0];
+                const strB = cols[1];
+
+                const parsedA = parseNumberToDigits(strA);
+                const parsedB = parseNumberToDigits(strB);
+
+                newProblems.push({
+                    left: parsedA.digits,
+                    right: parsedB.digits,
+                    decimalLeft: parsedA.decimal,
+                    decimalRight: parsedB.decimal,
+                });
+                count++;
+            }
+
+            // Fill remaining if less than 10
+            while (newProblems.length < 10) {
+                newProblems.push({
+                    left: Array(7).fill(null),
+                    right: Array(7).fill(null),
+                    decimalLeft: null,
+                    decimalRight: null,
+                });
+            }
+
+            replaceProblems(newProblems);
+
+            // Reset input
+            e.target.value = '';
+        };
+        reader.readAsText(file);
+    };
+
 
     const shouldHighlight = (digits, idx) => {
         const val = digits[idx];
@@ -155,7 +308,7 @@ const MultiplicationGrid = ({ problems, updateDigit, toggleDecimal, generateRand
                                 <div className="digits-row">
                                     {prob.left.map((d, i) => renderDigitButton(index, 'left', i, d))}
                                 </div>
-                                {/* Decimal buttons removed for Factor A as requested */}
+                                {/* Decimal buttons buttons removed for Factor A as requested */}
                             </div>
 
                             <div className="operator">×</div>
@@ -182,9 +335,27 @@ const MultiplicationGrid = ({ problems, updateDigit, toggleDecimal, generateRand
                 })}
             </div>
             <div className="grid-footer">
-                <button className="generate-btn" onClick={generateRandomProblems}>
-                    再生成
-                </button>
+                <div className="footer-left">
+                    {/* Spacers or other left-aligned items if any */}
+                </div>
+                <div className="footer-right">
+                    <button className="generate-btn" onClick={generateRandomProblems}>
+                        再生成
+                    </button>
+                    <button className="csv-btn" onClick={handleExportCSV}>
+                        CSVに書き出し
+                    </button>
+                    <button className="csv-btn" onClick={handleImportClick}>
+                        CSVから読み込み
+                    </button>
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        style={{ display: 'none' }}
+                        accept=".csv"
+                        onChange={handleImportCSV}
+                    />
+                </div>
             </div>
         </div>
     );

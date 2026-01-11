@@ -41,18 +41,72 @@ export const useMultiplicationState = () => {
         });
     }, []);
 
-    const calculateValue = (digits, decimalIdx) => {
-        let str = "";
-        for (let i = 0; i < digits.length; i++) {
-            const val = digits[i] !== null ? digits[i] : 0;
-            str += val;
-            if (decimalIdx === i) {
-                str += ".";
+    const regenerateRow = useCallback((problemIndex, side, length) => {
+        setProblems(prev => {
+            const next = [...prev];
+            const p = { ...next[problemIndex] };
+
+            // Resolve 'R'
+            let finalLen = length;
+            if (length === 'R') {
+                finalLen = Math.floor(Math.random() * 4) + 4; // 4 to 7
             }
-        }
-        if (str === "" || str === ".") return 0;
-        return parseFloat(str);
-    };
+
+            // Generate unique digits
+            const digitsPool = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+            // Shuffle
+            for (let i = digitsPool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [digitsPool[i], digitsPool[j]] = [digitsPool[j], digitsPool[i]];
+            }
+            const newDigits = digitsPool.slice(0, finalLen);
+
+            // Ensure first digit is not 0
+            if (newDigits[0] === 0) {
+                // Swap 0 with the next digit (array size is at least 4, so [1] exists)
+                [newDigits[0], newDigits[1]] = [newDigits[1], newDigits[0]];
+            }
+
+            // Set digits (right-aligned in size 7 array)
+            const newArr = Array(7).fill(null);
+            const startIndex = 7 - finalLen;
+            for (let k = 0; k < finalLen; k++) {
+                newArr[startIndex + k] = newDigits[k];
+            }
+
+            p[side] = newArr;
+
+            // Decimal logic
+            if (side === 'right') {
+                if (Math.random() < 0.3) {
+                    // Valid positions: 0 to len-2 relative to digits
+                    // Grid index: startIndex + k
+                    const k = Math.floor(Math.random() * (finalLen - 1));
+                    p.decimalRight = startIndex + k;
+                } else {
+                    p.decimalRight = null;
+                }
+            } else {
+                p.decimalLeft = null;
+            }
+
+            next[problemIndex] = p;
+            return next;
+        });
+    }, []);
+
+    // const calculateValue = (digits, decimalIdx) => {
+    //     let str = "";
+    //     for (let i = 0; i < digits.length; i++) {
+    //         const val = digits[i] !== null ? digits[i] : 0;
+    //         str += val;
+    //         if (decimalIdx === i) {
+    //             str += ".";
+    //         }
+    //     }
+    //     if (str === "" || str === ".") return 0;
+    //     return parseFloat(str);
+    // };
 
     const generateRandomProblems = useCallback(() => {
         // --- 1. Determine Digit Counts ---
@@ -555,6 +609,7 @@ export const useMultiplicationState = () => {
         problems,
         updateDigit,
         toggleDecimal,
+        regenerateRow,
 
         frequencyAll,
         totalFrequencyAll,
@@ -574,6 +629,7 @@ export const useMultiplicationState = () => {
         totalRowDigitsRight,
 
         consecutive,
-        generateRandomProblems
+        generateRandomProblems,
+        replaceProblems: setProblems
     };
 };

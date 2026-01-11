@@ -591,7 +591,7 @@ export const useProblemState = (initialData = {}) => {
             });
             let mo = -Infinity, mu = Infinity;
             diff2.forEach(d => { if (d > mo) mo = d; if (d < mu) mu = d; });
-            const isBalanced = (mo < 1 && mu > -1);
+            // const isBalanced = (mo < 1 && mu > -1);
 
             // Check Answer Min Logic
             let isAnsMinOk = true;
