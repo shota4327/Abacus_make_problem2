@@ -23,12 +23,12 @@ const ProblemContainer = ({ initialData, onUpdate, pageIndex }) => {
         enclosedDigit, setEnclosedDigit,
         sandwichedDigit, setSandwichedDigit,
         consecutiveDigit, setConsecutiveDigit,
-        firstRowMin, setFirstRowMin,
-        firstRowMax, setFirstRowMax,
-        lastRowMin, setLastRowMin,
-        lastRowMax, setLastRowMax,
-        answerMin, setAnswerMin,
-        answerMax, setAnswerMax,
+        firstRowFirstDigit, setFirstRowMin,
+        firstRowLastDigit, setFirstRowMax,
+        lastRowFirstDigit, setLastRowMin,
+        lastRowLastDigit, setLastRowMax,
+        answerFirstDigit, setAnswerMin,
+        answerLastDigit, setAnswerMax,
         complementStatus,
         isEnclosedUsed, isSandwichedUsed, isConsecutiveUsed,
         isFirstMinValid, isFirstMaxValid, isLastMinValid, isLastMaxValid, isAnsMinValid, isAnsMaxValid,
@@ -104,12 +104,12 @@ const ProblemContainer = ({ initialData, onUpdate, pageIndex }) => {
                 enclosedDigit={enclosedDigit} setEnclosedDigit={setEnclosedDigit}
                 sandwichedDigit={sandwichedDigit} setSandwichedDigit={setSandwichedDigit}
                 consecutiveDigit={consecutiveDigit} setConsecutiveDigit={setConsecutiveDigit}
-                firstRowMin={firstRowMin} setFirstRowMin={setFirstRowMin}
-                firstRowMax={firstRowMax} setFirstRowMax={setFirstRowMax}
-                lastRowMin={lastRowMin} setLastRowMin={setLastRowMin}
-                lastRowMax={lastRowMax} setLastRowMax={setLastRowMax}
-                answerMin={answerMin} setAnswerMin={setAnswerMin}
-                answerMax={answerMax} setAnswerMax={setAnswerMax}
+                firstRowFirstDigit={firstRowFirstDigit} setFirstRowMin={setFirstRowMin}
+                firstRowLastDigit={firstRowLastDigit} setFirstRowMax={setFirstRowMax}
+                lastRowFirstDigit={lastRowFirstDigit} setLastRowMin={setLastRowMin}
+                lastRowLastDigit={lastRowLastDigit} setLastRowMax={setLastRowMax}
+                answerFirstDigit={answerFirstDigit} setAnswerMin={setAnswerMin}
+                answerLastDigit={answerLastDigit} setAnswerMax={setAnswerMax}
                 hasMinus={isMinusRows.some(Boolean)}
                 complementStatus={complementStatus}
                 isEnclosedUsed={isEnclosedUsed}
