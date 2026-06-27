@@ -34,10 +34,8 @@ const ProblemGrid = ({
             const row = grid[ri];
             // Format value
             let rowValStr = "";
-            let isLeading = true;
             row.forEach(d => {
                 const val = d === null ? 0 : d;
-                if (val !== 0) isLeading = false;
                 rowValStr += val;
                 // Note: Ignoring leading zeros in string rep? 
                 // Wait, typically we want full string? Or value?
@@ -66,12 +64,12 @@ const ProblemGrid = ({
         csvBody += `囲み文字,${c.enclosedDigit ?? ''}\n`;
         csvBody += `はさまれ文字,${c.sandwichedDigit ?? ''}\n`;
         csvBody += `連続文字,${c.consecutiveDigit ?? ''}\n`;
-        csvBody += `初口最小,${c.firstRowMin ?? ''}\n`;
-        csvBody += `初口最大,${c.firstRowMax ?? ''}\n`;
-        csvBody += `末口最小,${c.lastRowMin ?? ''}\n`;
-        csvBody += `末口最大,${c.lastRowMax ?? ''}\n`;
-        csvBody += `答え最小,${c.answerMin ?? ''}\n`;
-        csvBody += `答え最大,${c.answerMax ?? ''}\n`;
+        csvBody += `初口先頭,${c.firstRowFirstDigit ?? ''}\n`;
+        csvBody += `初口末尾,${c.firstRowLastDigit ?? ''}\n`;
+        csvBody += `末口最小,${c.lastRowFirstDigit ?? ''}\n`;
+        csvBody += `末口最大,${c.lastRowLastDigit ?? ''}\n`;
+        csvBody += `答え最小,${c.answerFirstDigit ?? ''}\n`;
+        csvBody += `答え最大,${c.answerLastDigit ?? ''}\n`;
 
         const csvContent = "\uFEFF" + header + csvBody;
 
@@ -209,12 +207,12 @@ const ProblemGrid = ({
             if (conditionsMap['はさまれ文字']) newState.sandwichedDigit = safeInt(conditionsMap['はさまれ文字']);
             if (conditionsMap['連続文字']) newState.consecutiveDigit = safeInt(conditionsMap['連続文字']);
 
-            if (conditionsMap['初口最小']) newState.firstRowMin = safeInt(conditionsMap['初口最小']);
-            if (conditionsMap['初口最大']) newState.firstRowMax = safeInt(conditionsMap['初口最大']);
-            if (conditionsMap['末口最小']) newState.lastRowMin = safeInt(conditionsMap['末口最小']);
-            if (conditionsMap['末口最大']) newState.lastRowMax = safeInt(conditionsMap['末口最大']);
-            if (conditionsMap['答え最小']) newState.answerMin = safeInt(conditionsMap['答え最小']);
-            if (conditionsMap['答え最大']) newState.answerMax = safeInt(conditionsMap['答え最大']);
+            if (conditionsMap['初口先頭']) newState.firstRowFirstDigit = safeInt(conditionsMap['初口先頭']);
+            if (conditionsMap['初口末尾']) newState.firstRowLastDigit = safeInt(conditionsMap['初口末尾']);
+            if (conditionsMap['末口最小']) newState.lastRowFirstDigit = safeInt(conditionsMap['末口最小']);
+            if (conditionsMap['末口最大']) newState.lastRowLastDigit = safeInt(conditionsMap['末口最大']);
+            if (conditionsMap['答え最小']) newState.answerFirstDigit = safeInt(conditionsMap['答え最小']);
+            if (conditionsMap['答え最大']) newState.answerLastDigit = safeInt(conditionsMap['答え最大']);
 
             importState(newState);
             e.target.value = '';

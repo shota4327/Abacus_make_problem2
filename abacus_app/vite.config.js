@@ -5,5 +5,9 @@ import { viteSingleFile } from "vite-plugin-singlefile"
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), viteSingleFile()],
+  build: {
+    minify: false,
+    target: 'esnext'
+  },
   base: './',
 })

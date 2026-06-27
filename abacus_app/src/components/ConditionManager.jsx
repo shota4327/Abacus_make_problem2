@@ -31,60 +31,68 @@ const ConditionManager = ({ problems, onUpdate }) => {
             label: '1口目',
             type: 'range',
             key: 'firstRow',
-            minConfig: { key: 'firstRowMin', options: digitOptions, isNullable: true, noZero: true, warnKey: 'isFirstMinValid' },
-            maxConfig: { key: 'firstRowMax', options: digitOptions, isNullable: true, warnKey: 'isFirstMaxValid' }
+            minConfig: { key: 'firstRowFirstDigit', options: digitOptions, isNullable: true, noZero: true, warnKey: 'isFirstMinValid' },
+            maxConfig: { key: 'firstRowLastDigit', options: digitOptions, isNullable: true, warnKey: 'isFirstMaxValid' }
         },
         {
             label: '最終口',
             type: 'range',
             key: 'lastRow',
-            minConfig: { key: 'lastRowMin', options: digitOptions, isNullable: true, noZero: true, warnKey: 'isLastMinValid' },
-            maxConfig: { key: 'lastRowMax', options: digitOptions, isNullable: true, warnKey: 'isLastMaxValid' }
+            minConfig: { key: 'lastRowFirstDigit', options: digitOptions, isNullable: true, noZero: true, warnKey: 'isLastMinValid' },
+            maxConfig: { key: 'lastRowLastDigit', options: digitOptions, isNullable: true, warnKey: 'isLastMaxValid' }
         },
         {
             label: '答え',
             type: 'range',
             key: 'answer',
-            minConfig: { key: 'answerMin', options: digitOptions, isNullable: true, noZero: true, warnKey: 'isAnsMinValid' },
-            maxConfig: { key: 'answerMax', options: digitOptions, isNullable: true, warnKey: 'isAnsMaxValid' }
+            minConfig: { key: 'answerFirstDigit', options: digitOptions, isNullable: true, noZero: true, warnKey: 'isAnsMinValid' },
+            maxConfig: { key: 'answerLastDigit', options: digitOptions, isNullable: true, warnKey: 'isAnsMaxValid' }
         },
         { label: 'マイナス', key: 'hasMinus', readOnly: true, format: val => val ? 'あり' : 'なし' },
         { label: '補数計算', key: 'complementStatus', readOnly: true },
     ];
 
+    /**
+     * セル内のポップオーバーから値が選択された時の処理
+     */
     const handleSelect = (problemIndex, key, val, config) => {
         const problemState = problems[problemIndex];
         let finalVal = val;
 
+        // 'R'（ランダム）が選ばれた場合
         if (val === 'R') {
             const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
             let opts = config.options;
+            // ゼロを許容しない設定の場合は除外
             if (config.noZero) {
                 opts = opts.filter(d => d !== 0);
             }
             finalVal = getRandom(opts);
         }
 
-        // Handle Range Constraints (Min/Max Digit)
+        // 範囲指定（最小・最大）の整合性チェック
         if (config.limitType === 'min') {
-            // setting min, ensure <= max
+            // 最小値を設定する場合、最大値を超えないようにする
             const maxVal = problemState[config.limitKey];
             finalVal = Math.min(finalVal, maxVal);
         } else if (config.limitType === 'max') {
-            // setting max, ensure >= min
+            // 最大値を設定する場合、最小値を下回らないようにする
             const minVal = problemState[config.limitKey];
             finalVal = Math.max(finalVal, minVal);
         }
 
         const newState = { ...problemState, [key]: finalVal };
         onUpdate(problemIndex, newState);
-        setActiveSelector(null);
+        setActiveSelector(null); // ポップオーバーを閉じる
     };
 
+    /**
+     * 各設定行の右端にある「R（ランダム）」ボタンが押された時の処理
+     * 10問すべての該当項目をランダムに設定（重複回避などのルール適用）
+     */
     const handleRandomRow = (rowConfig) => {
-        // Logic specific to each row type requested
         if (rowConfig.key === 'targetTotalDigits') {
-            // 120 and 140: 1 or 2 each (balanced). Rest 130.
+            // 目標合計桁数: 120と140をそれぞれ1〜2問ずつ、残りを130に設定
             const count = Math.random() < 0.5 ? 1 : 2;
             const count120 = count;
             const count140 = count;
@@ -96,7 +104,7 @@ const ConditionManager = ({ problems, onUpdate }) => {
                 ...Array(count130).fill(130)
             ];
 
-            // Shuffle
+            // シャッフル
             for (let i = values.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [values[i], values[j]] = [values[j], values[i]];
@@ -107,8 +115,8 @@ const ConditionManager = ({ problems, onUpdate }) => {
             });
         }
         else if (rowConfig.key === 'rowCount') {
-            // Random 10-20. Must include at least one 20.
-            const opts = rowConfig.options; // 10..20
+            // 口数（行数）: 10〜20の間でランダム。ただし必ず1問は「20口」を含むこと
+            const opts = rowConfig.options; 
             const values = Array(10).fill(0).map(() => opts[Math.floor(Math.random() * opts.length)]);
 
             if (!values.includes(20)) {
@@ -119,9 +127,9 @@ const ConditionManager = ({ problems, onUpdate }) => {
                 onUpdate(i, { ...p, rowCount: values[i] });
             });
         }
-        else if (rowConfig.key === 'digits') { // Range row for digits
-            // Min/Max from lengths [5..12]. Min <= Max.
-            // Constraint: maxDigit >= targetTotalDigits / rowCount
+        else if (rowConfig.key === 'digits') { 
+            // 桁数の範囲（最小桁数〜最大桁数）: [5..12]の範囲から設定
+            // 制約: 最大桁数は (目標合計桁数 / 口数) 以上でなければならない
             const opts = rowConfig.minConfig.options;
 
             problems.forEach((p, i) => {
@@ -146,8 +154,8 @@ const ConditionManager = ({ problems, onUpdate }) => {
             });
         }
         else if (['plusOneDigit', 'minusOneDigit', 'enclosedDigit', 'sandwichedDigit', 'consecutiveDigit'].includes(rowConfig.key)) {
-            // 0-9 random PERMUTATION for the 10 problems.
-            // Constraints: must not match pair value.
+            // 各種条件文字: 0〜9を重複しないように各問に割り当てる
+            // 互いに矛盾する設定（例: 同じ数字を＋1文字と－1文字にする）を回避する
 
             let excludeKeys = [];
             if (rowConfig.key === 'plusOneDigit') excludeKeys = ['minusOneDigit'];
@@ -156,24 +164,21 @@ const ConditionManager = ({ problems, onUpdate }) => {
             else if (rowConfig.key === 'sandwichedDigit') excludeKeys = ['enclosedDigit', 'consecutiveDigit'];
             else if (rowConfig.key === 'consecutiveDigit') excludeKeys = ['enclosedDigit', 'sandwichedDigit'];
 
-            // Get current values of pair/group to avoid collisions
-            // excludeValsPerProblem[i] is an array of values to avoid for problem i
+            // 現在設定されている他の条件文字を取得し、除外リストを作成
             const excludeValsPerProblem = problems.map(p => excludeKeys.map(k => p[k]));
 
             const baseValues = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
             let bestValues = [...baseValues];
             let minConflicts = 11;
 
-            // Try to find a permutation with 0 conflicts
+            // 衝突が0になる順列を探す（最大100回試行）
             for (let attempt = 0; attempt < 100; attempt++) {
-                // Shuffle
                 const current = [...baseValues];
                 for (let i = current.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [current[i], current[j]] = [current[j], current[i]];
                 }
 
-                // Check conflicts
                 let conflicts = 0;
                 if (excludeKeys.length > 0) {
                     for (let i = 0; i < problems.length; i++) {
@@ -202,21 +207,22 @@ const ConditionManager = ({ problems, onUpdate }) => {
             });
         }
         else if (['firstRow', 'lastRow', 'answer'].includes(rowConfig.key)) {
-            // Left (Min): 1-9 + 1 duplicate (total 10).
-            // Right (Max): 0-9 (total 10).
+            // 1口目・最終口・答えの指定
+            // Min（最小値）: 1-9をそれぞれ1回ずつ + 1つ重複（合計10個）
+            // Max（最大値）: 0-9をそれぞれ1回ずつ割り当てる
 
             const baseMin = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-            const invalidVar = baseMin[Math.floor(Math.random() * baseMin.length)];
-            const minValues = [...baseMin, invalidVar]; // naming variable 'invalidVar' is unintentional, using 'extra' logic
+            const extraVar = baseMin[Math.floor(Math.random() * baseMin.length)];
+            const minValues = [...baseMin, extraVar]; 
 
-            // Shuffle Min
+            // Minをシャッフル
             for (let i = minValues.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [minValues[i], minValues[j]] = [minValues[j], minValues[i]];
             }
 
             const maxValues = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-            // Shuffle Max
+            // Maxをシャッフル
             for (let i = maxValues.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [maxValues[i], maxValues[j]] = [maxValues[j], maxValues[i]];

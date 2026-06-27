@@ -11,12 +11,12 @@ const ConditionPanel = ({
     enclosedDigit, setEnclosedDigit,
     sandwichedDigit, setSandwichedDigit,
     consecutiveDigit, setConsecutiveDigit,
-    firstRowMin, setFirstRowMin,
-    firstRowMax, setFirstRowMax,
-    lastRowMin, setLastRowMin,
-    lastRowMax, setLastRowMax,
-    answerMin, setAnswerMin,
-    answerMax, setAnswerMax,
+    firstRowFirstDigit, setFirstRowMin,
+    firstRowLastDigit, setFirstRowMax,
+    lastRowFirstDigit, setLastRowMin,
+    lastRowLastDigit, setLastRowMax,
+    answerFirstDigit, setAnswerMin,
+    answerLastDigit, setAnswerMax,
     hasMinus,
     complementStatus,
     isEnclosedUsed,
@@ -241,15 +241,15 @@ const ConditionPanel = ({
 
                 <div className="condition-item">
                     <span className="label">１口目:</span>
-                    {renderRangeDigitSelector('firstMin', firstRowMin, 'firstMax', firstRowMax)}
+                    {renderRangeDigitSelector('firstMin', firstRowFirstDigit, 'firstMax', firstRowLastDigit)}
                 </div>
                 <div className="condition-item">
                     <span className="label">最終口:</span>
-                    {renderRangeDigitSelector('lastMin', lastRowMin, 'lastMax', lastRowMax)}
+                    {renderRangeDigitSelector('lastMin', lastRowFirstDigit, 'lastMax', lastRowLastDigit)}
                 </div>
                 <div className="condition-item">
                     <span className="label">答え:</span>
-                    {renderRangeDigitSelector('ansMin', answerMin, 'ansMax', answerMax)}
+                    {renderRangeDigitSelector('ansMin', answerFirstDigit, 'ansMax', answerLastDigit)}
                 </div>
                 <div className="condition-item">
                     <span className="label">マイナス:</span>
