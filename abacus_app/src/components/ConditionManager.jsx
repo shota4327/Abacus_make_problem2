@@ -86,6 +86,13 @@ const ConditionManager = ({ problems, onUpdate }) => {
         setActiveSelector(null); // ポップオーバーを閉じる
     };
 
+    const isCompatible = (tt, rc, minD, maxD) => {
+        if (minD * rc > tt) return false;
+        if (maxD * rc < tt) return false;
+        if (minD === maxD && minD * rc !== tt) return false;
+        return true;
+    };
+
     /**
      * 各設定行の右端にある「R（ランダム）」ボタンが押された時の処理を
      * problems配列に対して適用し、新しい配列を返す
@@ -94,9 +101,8 @@ const ConditionManager = ({ problems, onUpdate }) => {
         let newProblems = [...currentProblems];
 
         if (rowConfig.key === 'targetTotalDigits') {
-            const count = Math.random() < 0.5 ? 1 : 2;
-            const count120 = count;
-            const count140 = count;
+            const count120 = Math.random() < 0.5 ? 1 : 2;
+            const count140 = Math.random() < 0.5 ? 1 : 2;
             const count130 = 10 - count120 - count140;
 
             const values = [
@@ -110,40 +116,79 @@ const ConditionManager = ({ problems, onUpdate }) => {
                 [values[i], values[j]] = [values[j], values[i]];
             }
 
-            newProblems = newProblems.map((p, i) => ({ ...p, targetTotalDigits: values[i] }));
+            newProblems = newProblems.map((p, i) => {
+                let tt = values[i];
+                if (isCompatible(tt, p.rowCount, p.minDigit, p.maxDigit)) {
+                    return { ...p, targetTotalDigits: tt };
+                }
+                return p;
+            });
         }
         else if (rowConfig.key === 'rowCount') {
-            const opts = rowConfig.options; 
-            const values = Array(10).fill(0).map(() => opts[Math.floor(Math.random() * opts.length)]);
-
-            if (!values.includes(20)) {
-                values[Math.floor(Math.random() * 10)] = 20;
+            const opts = rowConfig.options.filter(o => o !== 20); 
+            const num20 = Math.random() < 0.1 ? 2 : 1;
+            
+            let availableFor20 = [];
+            for (let i = 0; i < 10; i++) {
+                if (isCompatible(newProblems[i].targetTotalDigits, 20, newProblems[i].minDigit, newProblems[i].maxDigit)) {
+                    availableFor20.push(i);
+                }
             }
+            for (let i = availableFor20.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [availableFor20[i], availableFor20[j]] = [availableFor20[j], availableFor20[i]];
+            }
+            let rowCount20Indices = availableFor20.slice(0, num20);
 
-            newProblems = newProblems.map((p, i) => ({ ...p, rowCount: values[i] }));
+            newProblems = newProblems.map((p, i) => {
+                let rc;
+                if (rowCount20Indices.includes(i)) {
+                    rc = 20;
+                } else {
+                    rc = opts[Math.floor(Math.random() * opts.length)];
+                }
+                if (isCompatible(p.targetTotalDigits, rc, p.minDigit, p.maxDigit)) {
+                    return { ...p, rowCount: rc };
+                }
+                return p;
+            });
         }
         else if (rowConfig.key === 'digits') { 
             const opts = rowConfig.minConfig.options;
 
+            let availableForExact = [];
+            for (let i = 0; i < 10; i++) {
+                let p = newProblems[i];
+                if (p.targetTotalDigits % p.rowCount === 0) {
+                    let d = p.targetTotalDigits / p.rowCount;
+                    if (opts.includes(d)) {
+                        availableForExact.push(i);
+                    }
+                }
+            }
+            for (let i = availableForExact.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [availableForExact[i], availableForExact[j]] = [availableForExact[j], availableForExact[i]];
+            }
+            let exactIndex = availableForExact.length > 0 ? availableForExact[0] : -1;
+
             newProblems = newProblems.map((p, i) => {
-                const avg = p.targetTotalDigits / p.rowCount;
-                const minAllowedMax = Math.ceil(avg);
-                const maxAllowedMin = Math.floor(avg);
+                let minD, maxD;
+                if (i === exactIndex) {
+                    let d = p.targetTotalDigits / p.rowCount;
+                    minD = d;
+                    maxD = d;
+                } else {
+                    let d1 = opts[Math.floor(Math.random() * opts.length)];
+                    let d2 = opts[Math.floor(Math.random() * opts.length)];
+                    minD = Math.min(d1, d2);
+                    maxD = Math.max(d1, d2);
+                }
 
-                let validMaxOpts = opts.filter(o => o >= minAllowedMax);
-                if (validMaxOpts.length === 0) validMaxOpts = [Math.max(...opts)];
-
-                let validMinOpts = opts.filter(o => o <= maxAllowedMin);
-                if (validMinOpts.length === 0) validMinOpts = [Math.min(...opts)];
-
-                const valMaxCandidate = validMaxOpts[Math.floor(Math.random() * validMaxOpts.length)];
-                const valMinCandidate = validMinOpts[Math.floor(Math.random() * validMinOpts.length)];
-
-                return {
-                    ...p,
-                    minDigit: Math.min(valMinCandidate, valMaxCandidate),
-                    maxDigit: Math.max(valMinCandidate, valMaxCandidate)
-                };
+                if (isCompatible(p.targetTotalDigits, p.rowCount, minD, maxD)) {
+                    return { ...p, minDigit: minD, maxDigit: maxD };
+                }
+                return p;
             });
         }
         else if (['plusOneDigit', 'minusOneDigit', 'enclosedDigit', 'sandwichedDigit', 'consecutiveDigit'].includes(rowConfig.key)) {
@@ -253,8 +298,88 @@ const ConditionManager = ({ problems, onUpdate }) => {
      */
     const handleAllRandom = () => {
         let currentProblems = [...problems];
-        // マイナスと補数計算は統合されているので1回だけ実行する
+
+        // --- ベース3項目（総字数、口数、桁数）を一括して矛盾なく生成する ---
+        let success = false;
+        let attempts = 0;
+        const num20 = Math.random() < 0.1 ? 2 : 1;
+        
+        // rows から桁数のオプションを探す
+        let digitsRow = rows.find(r => r.key === 'digits');
+        const optsDigits = digitsRow ? digitsRow.minConfig.options : [5,6,7,8,9,10,11,12];
+
+        while (!success && attempts < 1000) {
+            attempts++;
+            let tempProblems = currentProblems.map(p => ({...p}));
+            
+            const count120 = Math.random() < 0.5 ? 1 : 2;
+            const count140 = Math.random() < 0.5 ? 1 : 2;
+            const count130 = 10 - count120 - count140;
+            let ttValues = [
+                ...Array(count120).fill(120),
+                ...Array(count140).fill(140),
+                ...Array(count130).fill(130)
+            ];
+            for (let i = ttValues.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [ttValues[i], ttValues[j]] = [ttValues[j], ttValues[i]];
+            }
+
+            let indices = [0,1,2,3,4,5,6,7,8,9];
+            for (let i = indices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+            let rowCount20Indices = indices.slice(0, num20);
+            let exactIndex = Math.floor(Math.random() * 10);
+
+            let allOk = true;
+            for (let i = 0; i < 10; i++) {
+                let tt = ttValues[i];
+                let rc = rowCount20Indices.includes(i) ? 20 : Math.floor(Math.random() * 10) + 10; // 10~19
+                let minD, maxD;
+
+                if (i === exactIndex) {
+                    if (tt % rc === 0 && optsDigits.includes(tt / rc)) {
+                        minD = maxD = tt / rc;
+                    } else {
+                        allOk = false;
+                        break;
+                    }
+                } else {
+                    let avg = tt / rc;
+                    minD = Math.max(Math.min(...optsDigits), Math.floor(avg));
+                    maxD = Math.min(Math.max(...optsDigits), Math.ceil(avg));
+                    if (minD === maxD) {
+                        if (maxD < Math.max(...optsDigits)) maxD++;
+                        else if (minD > Math.min(...optsDigits)) minD--;
+                    }
+                    if (!isCompatible(tt, rc, minD, maxD)) {
+                        allOk = false;
+                        break;
+                    }
+                }
+                
+                tempProblems[i].targetTotalDigits = tt;
+                tempProblems[i].rowCount = rc;
+                tempProblems[i].minDigit = minD;
+                tempProblems[i].maxDigit = maxD;
+            }
+
+            if (allOk) {
+                currentProblems = tempProblems;
+                success = true;
+            }
+        }
+        
+        if (!success) {
+            console.warn("Failed to generate combined base settings for ALL RANDOM.");
+        }
+
         const seenKeys = new Set();
+        seenKeys.add('targetTotalDigits');
+        seenKeys.add('rowCount');
+        seenKeys.add('digits');
         
         rows.forEach(rowConfig => {
             if (rowConfig.readOnly) return;
