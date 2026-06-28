@@ -17,8 +17,9 @@ const ConditionPanel = ({
     lastRowLastDigit, setLastRowMax,
     answerFirstDigit, setAnswerMin,
     answerLastDigit, setAnswerMax,
-    hasMinus,
-    complementStatus,
+    hasMinus, setHasMinus,
+    complementStatus, setComplementStatus,
+    isMinusValid, isComplementValid,
     isEnclosedUsed,
     isSandwichedUsed,
     isConsecutiveUsed,
@@ -67,6 +68,22 @@ const ConditionPanel = ({
         else if (activeSelector === 'ansMin') setAnswerMin(finalVal);
         else if (activeSelector === 'ansMax') setAnswerMax(finalVal);
         setActiveSelector(null);
+    };
+
+    const handleMinusToggle = () => {
+        const newVal = !hasMinus;
+        setHasMinus(newVal);
+        if (!newVal) {
+            setComplementStatus(false);
+        }
+    };
+
+    const handleComplementToggle = () => {
+        const newVal = !complementStatus;
+        setComplementStatus(newVal);
+        if (newVal) {
+            setHasMinus(true);
+        }
     };
 
     const renderDigitSelector = (type, currentVal) => {
@@ -253,15 +270,22 @@ const ConditionPanel = ({
                 </div>
                 <div className="condition-item">
                     <span className="label">マイナス:</span>
-                    <span style={{ fontWeight: 'bold' }}>
+                    <button
+                        className={`picker-btn wide-text ${!isMinusValid ? 'warn' : ''}`}
+                        onClick={handleMinusToggle}
+                    >
                         {hasMinus ? 'あり' : 'なし'}
-                    </span>
+                    </button>
                 </div>
                 <div className="condition-item">
                     <span className="label">補数計算:</span>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>
+                    <button
+                        className={`picker-btn wide-text ${!isComplementValid ? 'warn' : ''}`}
+                        onClick={handleComplementToggle}
+                        style={{ fontSize: '0.85rem' }}
+                    >
                         {complementStatus ? '補数計算あり' : 'なし'}
-                    </span>
+                    </button>
                 </div>
             </div>
         </div>

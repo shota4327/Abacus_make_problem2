@@ -43,7 +43,7 @@ export const createInitialProblemState = () => ({
     answerLastDigit: null,                     // 答えの末尾の数字
     
     hasMinus: false,                           // マイナスの答えを持つかのフラグ（旧仕様）
-    complementStatus: "なし"                   // 補数計算のステータス
+    complementStatus: false                    // 補数計算のステータス
 });
 
 /**

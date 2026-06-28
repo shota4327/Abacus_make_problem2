@@ -35,7 +35,7 @@
 
 .picker-btn {
     width: 32px;
-    height: 28px;
+    height: 32px;
     padding: 0;
     border: 1px solid var(--border-color);
     background: white;
@@ -48,6 +48,12 @@
 
 .picker-btn.wide {
     width: 48px;
+}
+
+.picker-btn.wide-text {
+    width: auto;
+    min-width: 48px;
+    padding: 0 8px;
 }
 
 .picker-btn:hover,

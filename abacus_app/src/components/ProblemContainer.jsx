@@ -29,12 +29,14 @@ const ProblemContainer = ({ initialData, onUpdate, pageIndex }) => {
         lastRowLastDigit, setLastRowMax,
         answerFirstDigit, setAnswerMin,
         answerLastDigit, setAnswerMax,
-        complementStatus,
+        complementStatus, setComplementStatus,
+        calculatedComplementStatus,
         isEnclosedUsed, isSandwichedUsed, isConsecutiveUsed,
         isFirstMinValid, isFirstMaxValid, isLastMinValid, isLastMaxValid, isAnsMinValid, isAnsMaxValid,
         totalSum,
         consecutive, // Added
         isMinusRows, toggleRowMinus, // Added
+        hasMinus, setHasMinus,
         currentState, // New snapshot object
         importState // New
     } = useProblemState(initialData);
@@ -97,8 +99,10 @@ const ProblemContainer = ({ initialData, onUpdate, pageIndex }) => {
                 lastRowLastDigit={lastRowLastDigit} setLastRowMax={setLastRowMax}
                 answerFirstDigit={answerFirstDigit} setAnswerMin={setAnswerMin}
                 answerLastDigit={answerLastDigit} setAnswerMax={setAnswerMax}
-                hasMinus={isMinusRows.some(Boolean)}
-                complementStatus={complementStatus}
+                hasMinus={hasMinus} setHasMinus={setHasMinus}
+                complementStatus={complementStatus} setComplementStatus={setComplementStatus}
+                isMinusValid={hasMinus === isMinusRows.some(Boolean)}
+                isComplementValid={complementStatus === (calculatedComplementStatus !== "なし")}
                 isEnclosedUsed={isEnclosedUsed}
                 isSandwichedUsed={isSandwichedUsed}
                 isConsecutiveUsed={isConsecutiveUsed}
