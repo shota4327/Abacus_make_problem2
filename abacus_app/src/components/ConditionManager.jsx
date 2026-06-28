@@ -48,8 +48,8 @@ const ConditionManager = ({ problems, onUpdate }) => {
             minConfig: { key: 'answerFirstDigit', options: digitOptions, isNullable: true, noZero: true, warnKey: 'isAnsMinValid' },
             maxConfig: { key: 'answerLastDigit', options: digitOptions, isNullable: true, warnKey: 'isAnsMaxValid' }
         },
-        { label: 'マイナス', key: 'hasMinus', readOnly: true, format: val => val ? 'あり' : 'なし' },
-        { label: '補数計算', key: 'complementStatus', readOnly: true },
+        { label: 'マイナス', key: 'hasMinus', type: 'toggle', format: val => val ? 'あり' : 'なし' },
+        { label: '補数計算', key: 'complementStatus', type: 'toggle', format: val => val ? '補数計算あり' : 'なし' },
     ];
 
     /**
@@ -87,12 +87,13 @@ const ConditionManager = ({ problems, onUpdate }) => {
     };
 
     /**
-     * 各設定行の右端にある「R（ランダム）」ボタンが押された時の処理
-     * 10問すべての該当項目をランダムに設定（重複回避などのルール適用）
+     * 各設定行の右端にある「R（ランダム）」ボタンが押された時の処理を
+     * problems配列に対して適用し、新しい配列を返す
      */
-    const handleRandomRow = (rowConfig) => {
+    const applyRandomRow = (rowConfig, currentProblems) => {
+        let newProblems = [...currentProblems];
+
         if (rowConfig.key === 'targetTotalDigits') {
-            // 目標合計桁数: 120と140をそれぞれ1〜2問ずつ、残りを130に設定
             const count = Math.random() < 0.5 ? 1 : 2;
             const count120 = count;
             const count140 = count;
@@ -104,18 +105,14 @@ const ConditionManager = ({ problems, onUpdate }) => {
                 ...Array(count130).fill(130)
             ];
 
-            // シャッフル
             for (let i = values.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [values[i], values[j]] = [values[j], values[i]];
             }
 
-            problems.forEach((p, i) => {
-                onUpdate(i, { ...p, targetTotalDigits: values[i] });
-            });
+            newProblems = newProblems.map((p, i) => ({ ...p, targetTotalDigits: values[i] }));
         }
         else if (rowConfig.key === 'rowCount') {
-            // 口数（行数）: 10〜20の間でランダム。ただし必ず1問は「20口」を含むこと
             const opts = rowConfig.options; 
             const values = Array(10).fill(0).map(() => opts[Math.floor(Math.random() * opts.length)]);
 
@@ -123,16 +120,12 @@ const ConditionManager = ({ problems, onUpdate }) => {
                 values[Math.floor(Math.random() * 10)] = 20;
             }
 
-            problems.forEach((p, i) => {
-                onUpdate(i, { ...p, rowCount: values[i] });
-            });
+            newProblems = newProblems.map((p, i) => ({ ...p, rowCount: values[i] }));
         }
         else if (rowConfig.key === 'digits') { 
-            // 桁数の範囲（最小桁数〜最大桁数）: [5..12]の範囲から設定
-            // 制約: 最大桁数は (目標合計桁数 / 口数) 以上でなければならない
             const opts = rowConfig.minConfig.options;
 
-            problems.forEach((p, i) => {
+            newProblems = newProblems.map((p, i) => {
                 const avg = p.targetTotalDigits / p.rowCount;
                 const minAllowedMax = Math.ceil(avg);
                 const maxAllowedMin = Math.floor(avg);
@@ -146,17 +139,14 @@ const ConditionManager = ({ problems, onUpdate }) => {
                 const valMaxCandidate = validMaxOpts[Math.floor(Math.random() * validMaxOpts.length)];
                 const valMinCandidate = validMinOpts[Math.floor(Math.random() * validMinOpts.length)];
 
-                onUpdate(i, {
+                return {
                     ...p,
                     minDigit: Math.min(valMinCandidate, valMaxCandidate),
                     maxDigit: Math.max(valMinCandidate, valMaxCandidate)
-                });
+                };
             });
         }
         else if (['plusOneDigit', 'minusOneDigit', 'enclosedDigit', 'sandwichedDigit', 'consecutiveDigit'].includes(rowConfig.key)) {
-            // 各種条件文字: 0〜9を重複しないように各問に割り当てる
-            // 互いに矛盾する設定（例: 同じ数字を＋1文字と－1文字にする）を回避する
-
             let excludeKeys = [];
             if (rowConfig.key === 'plusOneDigit') excludeKeys = ['minusOneDigit'];
             else if (rowConfig.key === 'minusOneDigit') excludeKeys = ['plusOneDigit'];
@@ -164,14 +154,12 @@ const ConditionManager = ({ problems, onUpdate }) => {
             else if (rowConfig.key === 'sandwichedDigit') excludeKeys = ['enclosedDigit', 'consecutiveDigit'];
             else if (rowConfig.key === 'consecutiveDigit') excludeKeys = ['enclosedDigit', 'sandwichedDigit'];
 
-            // 現在設定されている他の条件文字を取得し、除外リストを作成
-            const excludeValsPerProblem = problems.map(p => excludeKeys.map(k => p[k]));
+            const excludeValsPerProblem = newProblems.map(p => excludeKeys.map(k => p[k]));
 
             const baseValues = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
             let bestValues = [...baseValues];
             let minConflicts = 11;
 
-            // 衝突が0になる順列を探す（最大100回試行）
             for (let attempt = 0; attempt < 100; attempt++) {
                 const current = [...baseValues];
                 for (let i = current.length - 1; i > 0; i--) {
@@ -181,7 +169,7 @@ const ConditionManager = ({ problems, onUpdate }) => {
 
                 let conflicts = 0;
                 if (excludeKeys.length > 0) {
-                    for (let i = 0; i < problems.length; i++) {
+                    for (let i = 0; i < newProblems.length; i++) {
                         if (i < current.length && excludeValsPerProblem[i].includes(current[i])) {
                             conflicts++;
                         }
@@ -200,47 +188,105 @@ const ConditionManager = ({ problems, onUpdate }) => {
                 }
             }
 
-            problems.forEach((p, i) => {
+            newProblems = newProblems.map((p, i) => {
                 if (i < bestValues.length) {
-                    onUpdate(i, { ...p, [rowConfig.key]: bestValues[i] });
+                    return { ...p, [rowConfig.key]: bestValues[i] };
                 }
+                return p;
             });
         }
         else if (['firstRow', 'lastRow', 'answer'].includes(rowConfig.key)) {
-            // 1口目・最終口・答えの指定
-            // Min（最小値）: 1-9をそれぞれ1回ずつ + 1つ重複（合計10個）
-            // Max（最大値）: 0-9をそれぞれ1回ずつ割り当てる
-
             const baseMin = [1, 2, 3, 4, 5, 6, 7, 8, 9];
             const extraVar = baseMin[Math.floor(Math.random() * baseMin.length)];
             const minValues = [...baseMin, extraVar]; 
 
-            // Minをシャッフル
             for (let i = minValues.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [minValues[i], minValues[j]] = [minValues[j], minValues[i]];
             }
 
             const maxValues = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-            // Maxをシャッフル
             for (let i = maxValues.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [maxValues[i], maxValues[j]] = [maxValues[j], maxValues[i]];
             }
 
-            problems.forEach((p, i) => {
-                onUpdate(i, {
-                    ...p,
-                    [rowConfig.minConfig.key]: minValues[i],
-                    [rowConfig.maxConfig.key]: maxValues[i]
-                });
-            });
+            newProblems = newProblems.map((p, i) => ({
+                ...p,
+                [rowConfig.minConfig.key]: minValues[i],
+                [rowConfig.maxConfig.key]: maxValues[i]
+            }));
         }
+        else if (rowConfig.key === 'hasMinus' || rowConfig.key === 'complementStatus') {
+            const indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+            for (let i = indices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+            const minusIndices = indices.slice(0, 3); // 3問
+            const complementIndex = minusIndices[Math.floor(Math.random() * minusIndices.length)]; // その中の1問
+
+            const minusSet = new Set(minusIndices);
+
+            newProblems = newProblems.map((p, i) => ({
+                ...p, 
+                hasMinus: minusSet.has(i),
+                complementStatus: i === complementIndex
+            }));
+        }
+
+        return newProblems;
+    };
+
+    /**
+     * 個別行のランダムボタンが押された時の処理
+     */
+    const handleRandomRow = (rowConfig) => {
+        const newProblems = applyRandomRow(rowConfig, problems);
+        newProblems.forEach((p, i) => {
+            onUpdate(i, p);
+        });
+    };
+
+    /**
+     * すべてのランダムボタンを一括で実行する処理
+     */
+    const handleAllRandom = () => {
+        let currentProblems = [...problems];
+        // マイナスと補数計算は統合されているので1回だけ実行する
+        const seenKeys = new Set();
+        
+        rows.forEach(rowConfig => {
+            if (rowConfig.readOnly) return;
+            
+            let keyGroup = rowConfig.key;
+            if (rowConfig.key === 'hasMinus' || rowConfig.key === 'complementStatus') {
+                keyGroup = 'minus_group';
+            }
+            if (['firstRow', 'lastRow', 'answer'].includes(rowConfig.key)) {
+                keyGroup = rowConfig.key; // これは独立して実行する
+            }
+
+            if (!seenKeys.has(keyGroup)) {
+                seenKeys.add(keyGroup);
+                currentProblems = applyRandomRow(rowConfig, currentProblems);
+            }
+        });
+
+        // 最後に一括で onUpdate
+        currentProblems.forEach((p, i) => {
+            onUpdate(i, p);
+        });
     };
 
     return (
         <div className="condition-manager-container">
-            <h2 className="manager-title">作問条件一覧</h2>
+            <div className="manager-header">
+                <h2 className="manager-title">作問条件一覧</h2>
+                <button className="all-random-btn" onClick={handleAllRandom}>
+                    すべてランダムに
+                </button>
+            </div>
             <div className="table-wrapper">
                 <table className="condition-table">
                     <thead>
@@ -261,6 +307,35 @@ const ConditionManager = ({ problems, onUpdate }) => {
                                 {problems.map((problemState, pIndex) => {
                                     const isBottomRow = rowIndex >= rows.length - 3; // Adjusted for shorter list
 
+                                    if (rowConfig.type === 'toggle') {
+                                        const rawVal = problemState[rowConfig.key] || false;
+                                        const currentVal = rowConfig.format ? rowConfig.format(rawVal) : rawVal;
+                                        return (
+                                            <td key={pIndex} className="cell-wrapper">
+                                                <div className="cell-container">
+                                                    <button
+                                                        className={`cell-btn wide-text`}
+                                                        onClick={() => {
+                                                            const newVal = !rawVal;
+                                                            let updates = { [rowConfig.key]: newVal };
+                                                            // 補数計算をONにした場合は自動でマイナスもONにする
+                                                            if (rowConfig.key === 'complementStatus' && newVal) {
+                                                                updates.hasMinus = true;
+                                                            }
+                                                            // マイナスをOFFにした場合は自動で補数計算もOFFにする
+                                                            if (rowConfig.key === 'hasMinus' && !newVal) {
+                                                                updates.complementStatus = false;
+                                                            }
+                                                            onUpdate(pIndex, { ...problemState, ...updates });
+                                                        }}
+                                                    >
+                                                        {currentVal}
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        );
+                                    }
+
                                     if (rowConfig.readOnly) {
                                         const rawVal = problemState[rowConfig.key];
                                         const currentVal = rowConfig.format ? rowConfig.format(rawVal) : rawVal;
@@ -268,7 +343,7 @@ const ConditionManager = ({ problems, onUpdate }) => {
                                             <td key={pIndex} className="cell-wrapper">
                                                 <div className="cell-container readonly">
                                                     <span className="readonly-text">
-                                                        {currentVal || (rowConfig.key === 'complementStatus' ? 'なし' : '-')}
+                                                        {currentVal || '-'}
                                                     </span>
                                                 </div>
                                             </td>
@@ -389,8 +464,8 @@ const ConditionManager = ({ problems, onUpdate }) => {
                                     );
                                 })}
                                 {/* Random Column Cell */}
-                                <td className="cell-wrapper random-col">
-                                    {!rowConfig.readOnly && (
+                                {rowConfig.key === 'hasMinus' ? (
+                                    <td rowSpan={2} className="cell-wrapper random-col" style={{ verticalAlign: 'middle' }}>
                                         <div className="cell-container">
                                             <button
                                                 className="cell-btn random-row-btn"
@@ -399,8 +474,21 @@ const ConditionManager = ({ problems, onUpdate }) => {
                                                 R
                                             </button>
                                         </div>
-                                    )}
-                                </td>
+                                    </td>
+                                ) : rowConfig.key === 'complementStatus' ? null : (
+                                    <td className="cell-wrapper random-col">
+                                        {!rowConfig.readOnly && (
+                                            <div className="cell-container">
+                                                <button
+                                                    className="cell-btn random-row-btn"
+                                                    onClick={() => handleRandomRow(rowConfig)}
+                                                >
+                                                    R
+                                                </button>
+                                            </div>
+                                        )}
+                                    </td>
+                                )}
                             </tr>
                         ))}
                     </tbody>

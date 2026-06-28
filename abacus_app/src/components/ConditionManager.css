@@ -7,11 +7,36 @@
     overflow: hidden;
 }
 
-.manager-title {
+.manager-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
     margin: 0 0 1rem 0;
+}
+
+.manager-title {
+    margin: 0;
     font-size: 1.2rem;
     color: var(--text-color);
-    text-align: center;
+}
+
+.all-random-btn {
+    position: absolute;
+    right: 0;
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: white;
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.all-random-btn:hover {
+    background-color: #0284c7;
 }
 
 .table-wrapper {
@@ -112,6 +137,14 @@
     background: #e0f2fe;
     color: var(--primary-color);
     border-color: #bae6fd;
+}
+
+.cell-btn.wide-text {
+    width: auto;
+    max-width: none;
+    padding: 0 8px;
+    font-size: 0.85rem;
+    white-space: nowrap;
 }
 
 .cell-btn.active {

@@ -3,8 +3,7 @@ import './ProblemGrid.css';
 
 const ProblemGrid = ({
     grid, updateDigit, rowCount, isMinusRows, toggleRowMinus, totalSum,
-    generateRandomGrid, isMinusAllowed, setIsMinusAllowed,
-    pageIndex, importState, currentConditions
+    generateRandomGrid, pageIndex, importState, currentConditions
 }) => {
     const [activeCell, setActiveCell] = useState(null); // {row, col}
     const fileInputRef = useRef(null);
@@ -58,7 +57,8 @@ const ProblemGrid = ({
         csvBody += `最高桁数,${c.maxDigit}\n`;
         csvBody += `合計桁数,${c.targetTotalDigits}\n`;
         csvBody += `口数,${c.rowCount}\n`;
-        csvBody += `マイナス許可,${c.isMinusAllowed ? 1 : 0}\n`;
+        csvBody += `マイナス,${c.hasMinus ? 1 : 0}\n`;
+        csvBody += `補数計算,${c.complementStatus ? 1 : 0}\n`;
         csvBody += `+1文字,${c.plusOneDigit ?? ''}\n`;
         csvBody += ` -1文字,${c.minusOneDigit ?? ''}\n`;
         csvBody += `囲み文字,${c.enclosedDigit ?? ''}\n`;
@@ -187,7 +187,9 @@ const ProblemGrid = ({
             if (conditionsMap['最高桁数']) newState.maxDigit = safeInt(conditionsMap['最高桁数']);
             if (conditionsMap['合計桁数']) newState.targetTotalDigits = safeInt(conditionsMap['合計桁数']);
             if (conditionsMap['口数']) newState.rowCount = safeInt(conditionsMap['口数']); // Overlay
-            if (conditionsMap['マイナス許可']) newState.isMinusAllowed = safeBool(conditionsMap['マイナス許可']);
+            if (conditionsMap['マイナス許可']) newState.hasMinus = safeBool(conditionsMap['マイナス許可']); // 旧形式の互換性
+            if (conditionsMap['マイナス']) newState.hasMinus = safeBool(conditionsMap['マイナス']);
+            if (conditionsMap['補数計算']) newState.complementStatus = safeBool(conditionsMap['補数計算']);
 
             newState.plusOneDigit = safeInt(conditionsMap['+1文字']);
             newState.minusOneDigit = safeInt(conditionsMap[' -1文字']); // Space due to csv split trim? Check label.
@@ -369,15 +371,6 @@ const ProblemGrid = ({
                 <button className="generate-btn" onClick={generateRandomGrid}>
                     再生成
                 </button>
-                <label className="minus-allowed-label" style={{ marginLeft: '0.5rem', display: 'flex', alignItems: 'center', cursor: 'pointer', color: '#333' }}>
-                    <input
-                        type="checkbox"
-                        checked={isMinusAllowed}
-                        onChange={(e) => setIsMinusAllowed(e.target.checked)}
-                        style={{ marginRight: '0.5rem', transform: 'scale(1.2)' }}
-                    />
-                    マイナス
-                </label>
             </div>
             <div className="grid-footer-sub" style={{ display: 'flex', justifyContent: 'center', marginTop: '10px', gap: '10px' }}>
                 <button className="csv-btn" onClick={handleExportCSV}>
