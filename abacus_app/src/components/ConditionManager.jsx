@@ -348,8 +348,17 @@ const ConditionManager = ({ problems, onUpdate }) => {
                     }
                 } else {
                     let avg = tt / rc;
-                    minD = Math.max(Math.min(...optsDigits), Math.floor(avg));
-                    maxD = Math.min(Math.max(...optsDigits), Math.ceil(avg));
+                    let allowedMins = optsDigits.filter(d => d <= Math.floor(avg));
+                    let allowedMaxs = optsDigits.filter(d => d >= Math.ceil(avg));
+
+                    if (allowedMins.length === 0 || allowedMaxs.length === 0) {
+                        allOk = false;
+                        break;
+                    }
+
+                    minD = allowedMins[Math.floor(Math.random() * allowedMins.length)];
+                    maxD = allowedMaxs[Math.floor(Math.random() * allowedMaxs.length)];
+
                     if (minD === maxD) {
                         if (maxD < Math.max(...optsDigits)) maxD++;
                         else if (minD > Math.min(...optsDigits)) minD--;
