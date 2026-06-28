@@ -56,3 +56,16 @@ export const createInitialMultiplicationState = () => ({
     decimalLeft: null,           // 左辺の小数点のインデックス（0-6）、ない場合は null
     decimalRight: null           // 右辺の小数点のインデックス（0-6）、ない場合は null
 });
+
+/**
+ * 1問分の除算の初期状態を生成します。
+ * @returns {Object}
+ */
+export const createInitialDivisionState = () => ({
+    dividend: Array(14).fill(null), // 割られる数（最大14桁、右詰め）
+    divisor: Array(7).fill(null),   // 割る数（最大7桁、右詰め）
+    answer: Array(7).fill(null),    // 答え（最大7桁、右詰め）
+    decimalDividend: null,          // 割られる数の小数点のインデックス（0-13）
+    decimalDivisor: null,           // 割る数の小数点のインデックス（0-6）
+    decimalAnswer: null             // 答えの小数点のインデックス（0-6）
+});

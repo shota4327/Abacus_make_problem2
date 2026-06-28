@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar';
 import ProblemContainer from './components/ProblemContainer';
 import ConditionManager from './components/ConditionManager';
 import MultiplicationContainer from './components/MultiplicationContainer';
+import DivisionContainer from './components/DivisionContainer';
 import { createInitialProblemState } from './constants/initialState';
 import './index.css';
 
@@ -27,6 +28,8 @@ function App() {
       <div className={`content-area ${currentTab === 'manager' ? 'manager-mode' : ''}`}>
         {currentTab === 'multiplication' ? (
           <MultiplicationContainer />
+        ) : currentTab === 'division' ? (
+          <DivisionContainer />
         ) : currentTab === 'manager' ? (
           <ConditionManager problems={problems} onUpdate={handleUpdate} />
         ) : (

@@ -165,7 +165,7 @@
 /* .multiplication-container .frequency-table:not(.consecutive-table) .row-label removed as row is hidden */
 
 .multiplication-container .frequency-table:not(.consecutive-table) .row-label,
-.multiplication-container .frequency-table:not(.consecutive-table) th:first-child {
+.multiplication-container .frequency-table:not(.consecutive-table):not(.division-frequency) th:first-child {
     width: 50px !important;
     min-width: 50px !important;
 }

@@ -13,6 +13,12 @@ const Sidebar = ({ currentTab, onTabChange }) => {
                     乗算問題
                 </button>
                 <button
+                    className={`sidebar-btn ${currentTab === 'division' ? 'active' : ''}`}
+                    onClick={() => onTabChange('division')}
+                >
+                    除算問題
+                </button>
+                <button
                     className={`sidebar-btn ${currentTab === 'manager' ? 'active' : ''}`}
                     onClick={() => onTabChange('manager')}
                 >
