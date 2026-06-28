@@ -193,7 +193,7 @@ export const evaluateConditions = (grid, conditions = {}, lockedCells = null) =>
  * @returns {Object} 生成された { grid, isMinusRows }
  */
 export const generateProblemGrid = ({
-    rowCount, minDigit, maxDigit, targetTotalDigits, isMinusAllowed, conditions
+    rowCount, minDigit, maxDigit, targetTotalDigits, hasMinus, complementStatus, conditions
 }) => {
     const TARGET_TIME_LIMIT = 5000; // 最大5秒間（より完璧な盤面を探索する）
     const startTime = performance.now();
@@ -203,42 +203,18 @@ export const generateProblemGrid = ({
         plusOneDigit, minusOneDigit, enclosedDigit, sandwichedDigit, consecutiveDigit
     } = conditions;
 
-    const nextMinusRows = Array(ROW_COUNT).fill(false);
-    
-    // マイナス行の決定
-    if (isMinusAllowed) {
-        // 全体の約1/3をマイナスにする (±1のブレ)
-        const baseCount = Math.floor(n / 3);
-        const variations = [-1, 0, 1];
-        const variation = variations[Math.floor(Math.random() * variations.length)];
-        let targetCount = baseCount + variation;
-        
-        targetCount = Math.max(0, Math.min(n - 1, targetCount));
-        
-        const eligibleIndices = [];
-        for (let i = 1; i < n; i++) eligibleIndices.push(i); // 1行目はマイナスにしない
-        
-        for (let i = eligibleIndices.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [eligibleIndices[i], eligibleIndices[j]] = [eligibleIndices[j], eligibleIndices[i]];
-        }
-        
-        for (let i = 0; i < targetCount; i++) {
-            nextMinusRows[eligibleIndices[i]] = true;
-        }
-    }
-
-    const calculateSum = (grid) => {
+    const calculateSum = (grid, minusRows = nextMinusRows) => {
         let sum = 0;
         for (let r = 0; r < n; r++) {
             let rowString = grid[r].map(d => d ?? 0).join('');
-            let val = parseInt(rowString, 10) * (nextMinusRows[r] ? -1 : 1);
+            let val = parseInt(rowString, 10) * (minusRows[r] ? -1 : 1);
             sum += val;
         }
         return sum;
     };
 
     let bestGrid = null;
+    let bestMinusRows = Array(ROW_COUNT).fill(false);
     let bestBalanceScore = -Infinity;
     let bestCondScore = -Infinity;
     let bestPenaltyScore = -Infinity;
@@ -249,6 +225,37 @@ export const generateProblemGrid = ({
         const min = Math.min(minDigit, maxDigit);
         const max = Math.max(minDigit, maxDigit);
         const target = targetTotalDigits;
+
+        // 0. マイナス行の決定
+        const nextMinusRows = Array(ROW_COUNT).fill(false);
+        if (hasMinus) {
+            // 全体の約1/3をマイナスにする (±1のブレ)
+            const baseCount = Math.floor(n / 3);
+            const variations = [-1, 0, 1];
+            const variation = variations[Math.floor(Math.random() * variations.length)];
+            let targetCount = baseCount + variation;
+            
+            // 補数計算がある場合は最低でも1行はマイナスが必要
+            if (complementStatus) {
+                targetCount = Math.max(1, Math.min(n - 1, targetCount));
+            } else {
+                targetCount = Math.max(0, Math.min(n - 1, targetCount));
+            }
+            
+            if (targetCount > 0) {
+                const eligibleIndices = [];
+                for (let i = 1; i < n; i++) eligibleIndices.push(i); // 1行目はマイナスにしない
+                
+                for (let i = eligibleIndices.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [eligibleIndices[i], eligibleIndices[j]] = [eligibleIndices[j], eligibleIndices[i]];
+                }
+                
+                for (let i = 0; i < targetCount; i++) {
+                    nextMinusRows[eligibleIndices[i]] = true;
+                }
+            }
+        }
 
         // 1. 各行の桁数を決定
         let lengths = [];
@@ -297,9 +304,12 @@ export const generateProblemGrid = ({
         lengths.sort(() => Math.random() - 0.5);
 
         // 1.5. 答えの最終桁（answerLastDigit）を満たすための右端の数字をあらかじめ決定する
+        // ただし、マイナス行が存在する場合、右端の数字の合計と全体の和の下一桁が桁借りにより一致しないため
+        // この事前固定は行わず、局所探索に任せる。
         let rightDigits = Array(n).fill(null);
-        if (answerLastDigit != null) {
-            while (true) {
+        if (answerLastDigit != null && !hasMinus) {
+            let limitCounter = 0;
+            while (limitCounter++ < 1000) {
                 let sum = 0;
                 let freqs = Array(10).fill(0);
                 for (let r = 0; r < n; r++) {
@@ -312,7 +322,7 @@ export const generateProblemGrid = ({
                     
                     rightDigits[r] = d;
                     freqs[d]++;
-                    sum += d * (nextMinusRows[r] ? -1 : 1);
+                    sum += d;
                 }
                 
                 // 同じ数字が多すぎるとオレンジ色（ペナルティ）を消せなくなるため回避
@@ -333,6 +343,10 @@ export const generateProblemGrid = ({
                 if (lsd === Number(answerLastDigit)) {
                     break;
                 }
+            }
+            if (limitCounter >= 1000) {
+                // 上限に達した場合は固定を諦める
+                rightDigits = Array(n).fill(null);
             }
         }
 
@@ -686,7 +700,7 @@ export const generateProblemGrid = ({
         // 答えの制約を満たしているか
         let isAnsMinOk = true;
         let isAnsLastOk = true;
-        const currentSumFinal = calculateSum(newGrid);
+        const currentSumFinal = calculateSum(newGrid, nextMinusRows);
         const s = String(Math.abs(currentSumFinal));
         
         if (answerFirstDigit != null) {
@@ -695,6 +709,10 @@ export const generateProblemGrid = ({
         if (answerLastDigit != null) {
             if (s[s.length - 1] !== String(answerLastDigit)) isAnsLastOk = false;
         }
+
+        // 補数計算の制約を満たしているか
+        const isComplementOccurred = (currentSumFinal < 0);
+        let isComplementOk = (isComplementOccurred === complementStatus);
 
         const freqs = Array(10).fill(0);
         let totalD = 0;
@@ -714,7 +732,7 @@ export const generateProblemGrid = ({
         // 総合スコアの計算
         const currentBalanceScore = -diff2.reduce((acc, val) => acc + Math.abs(val), 0);
         let currentIsBetter = false;
-        const currentAnswerMatch = isAnsMinOk && isAnsLastOk;
+        const currentAnswerMatch = isAnsMinOk && isAnsLastOk && isComplementOk;
 
         if (bestGrid === null) {
             currentIsBetter = true;
@@ -738,6 +756,7 @@ export const generateProblemGrid = ({
 
         if (currentIsBetter) {
             bestGrid = newGrid.map(row => [...row]);
+            bestMinusRows = [...nextMinusRows];
             bestBalanceScore = currentBalanceScore;
             bestCondScore = currentCondScore;
             bestPenaltyScore = currentPenaltyScore;
@@ -751,5 +770,5 @@ export const generateProblemGrid = ({
 
     const finalGrid = bestGrid ? bestGrid : createInitialGrid(); // 万一失敗した際のフォールバック
 
-    return { grid: finalGrid, isMinusRows: nextMinusRows };
+    return { grid: finalGrid, isMinusRows: bestMinusRows };
 };

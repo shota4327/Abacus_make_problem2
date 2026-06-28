@@ -260,7 +260,7 @@ const ConditionPanel = ({
                 <div className="condition-item">
                     <span className="label">補数計算:</span>
                     <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>
-                        {complementStatus}
+                        {complementStatus ? '補数計算あり' : 'なし'}
                     </span>
                 </div>
             </div>

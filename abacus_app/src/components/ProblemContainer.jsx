@@ -47,14 +47,9 @@ const ProblemContainer = ({ initialData, onUpdate, pageIndex }) => {
     // Sync state back to parent whenever it changes
     useEffect(() => {
         if (onUpdateRef.current && currentState) {
-            const extendedState = {
-                ...currentState,
-                hasMinus: isMinusRows.some(Boolean),
-                complementStatus
-            };
-            onUpdateRef.current(extendedState);
+            onUpdateRef.current(currentState);
         }
-    }, [currentState, isMinusRows, complementStatus]);
+    }, [currentState]);
 
     return (
         <>
@@ -66,15 +61,8 @@ const ProblemContainer = ({ initialData, onUpdate, pageIndex }) => {
                 toggleRowMinus={toggleRowMinus}
                 totalSum={totalSum}
                 generateRandomGrid={generateRandomGrid}
-                isMinusAllowed={isMinusAllowed}
-                setIsMinusAllowed={setIsMinusAllowed}
                 pageIndex={pageIndex}
                 importState={importState}
-                // Also pass condition variables if needed for Export?
-                // ProblemGrid needs to read conditions for Export.
-                // Pass a big object "conditions" or individually.
-                // Let's pass a comprehensive "conditions" object or use "currentState" if exposed to ProblemGrid.
-                // Actually currentState is exposed in ProblemContainer scope, let's pass it.
                 currentConditions={currentState}
             />
 
@@ -98,7 +86,6 @@ const ProblemContainer = ({ initialData, onUpdate, pageIndex }) => {
                 targetTotalDigits={targetTotalDigits} setTargetTotalDigits={setTargetTotalDigits}
                 rowCount={rowCount} setRowCount={setRowCount}
                 generateRandomGrid={generateRandomGrid}
-                isMinusAllowed={isMinusAllowed} setIsMinusAllowed={setIsMinusAllowed}
                 plusOneDigit={plusOneDigit} setPlusOneDigit={setPlusOneDigit}
                 minusOneDigit={minusOneDigit} setMinusOneDigit={setMinusOneDigit}
                 enclosedDigit={enclosedDigit} setEnclosedDigit={setEnclosedDigit}

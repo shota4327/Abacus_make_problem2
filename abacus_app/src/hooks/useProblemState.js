@@ -10,7 +10,8 @@ export const useProblemState = (initialData = {}) => {
         return createInitialGrid();
     });
     const [isMinusRows, setIsMinusRows] = useState(() => initialData.isMinusRows || Array(ROW_COUNT).fill(false));
-    const [isMinusAllowed, setIsMinusAllowed] = useState(() => initialData.isMinusAllowed !== undefined ? initialData.isMinusAllowed : false);
+    const [hasMinus, setHasMinus] = useState(() => initialData.hasMinus !== undefined ? initialData.hasMinus : false);
+    const [complementStatus, setComplementStatus] = useState(() => initialData.complementStatus !== undefined ? initialData.complementStatus : false);
     const [minDigit, setMinDigit] = useState(() => initialData.minDigit || 5);
     const [maxDigit, setMaxDigit] = useState(() => initialData.maxDigit || 12);
     const [targetTotalDigits, setTargetTotalDigits] = useState(() => initialData.targetTotalDigits || 130);
@@ -34,11 +35,11 @@ export const useProblemState = (initialData = {}) => {
 
     // --- 現在の状態のスナップショット（保存用） ---
     const currentState = useMemo(() => ({
-        grid, isMinusRows, isMinusAllowed, minDigit, maxDigit, targetTotalDigits, rowCount,
+        grid, isMinusRows, hasMinus, complementStatus, minDigit, maxDigit, targetTotalDigits, rowCount,
         plusOneDigit, minusOneDigit, enclosedDigit, sandwichedDigit, consecutiveDigit,
         firstRowFirstDigit, firstRowLastDigit, lastRowFirstDigit, lastRowLastDigit, answerFirstDigit, answerLastDigit
     }), [
-        grid, isMinusRows, isMinusAllowed, minDigit, maxDigit, targetTotalDigits, rowCount,
+        grid, isMinusRows, hasMinus, complementStatus, minDigit, maxDigit, targetTotalDigits, rowCount,
         plusOneDigit, minusOneDigit, enclosedDigit, sandwichedDigit, consecutiveDigit,
         firstRowFirstDigit, firstRowLastDigit, lastRowFirstDigit, lastRowLastDigit, answerFirstDigit, answerLastDigit
     ]);
@@ -88,7 +89,7 @@ export const useProblemState = (initialData = {}) => {
         setIsGenerating(true);
         setTimeout(() => {
             const { grid: newGrid, isMinusRows: newMinusRows } = generateProblemGrid({
-                rowCount, minDigit, maxDigit, targetTotalDigits, isMinusAllowed,
+                rowCount, minDigit, maxDigit, targetTotalDigits, hasMinus, complementStatus,
                 conditions: {
                     firstRowFirstDigit, firstRowLastDigit, lastRowFirstDigit, lastRowLastDigit, answerFirstDigit, answerLastDigit,
                     plusOneDigit, minusOneDigit, enclosedDigit, sandwichedDigit, consecutiveDigit
@@ -98,7 +99,7 @@ export const useProblemState = (initialData = {}) => {
             setIsMinusRows(newMinusRows);
             setIsGenerating(false);
         }, 50); // UIにローディングを表示するための遅延
-    }, [rowCount, minDigit, maxDigit, targetTotalDigits, isMinusAllowed,
+    }, [rowCount, minDigit, maxDigit, targetTotalDigits, hasMinus, complementStatus,
         firstRowFirstDigit, firstRowLastDigit, lastRowFirstDigit, lastRowLastDigit, answerFirstDigit, answerLastDigit,
         plusOneDigit, minusOneDigit, enclosedDigit, sandwichedDigit, consecutiveDigit
     ]);
@@ -111,7 +112,8 @@ export const useProblemState = (initialData = {}) => {
         if (newState.minDigit !== undefined) setMinDigit(newState.minDigit);
         if (newState.maxDigit !== undefined) setMaxDigit(newState.maxDigit);
         if (newState.targetTotalDigits !== undefined) setTargetTotalDigits(newState.targetTotalDigits);
-        if (newState.isMinusAllowed !== undefined) setIsMinusAllowed(newState.isMinusAllowed);
+        if (newState.hasMinus !== undefined) setHasMinus(newState.hasMinus);
+        if (newState.complementStatus !== undefined) setComplementStatus(newState.complementStatus);
 
         if (newState.plusOneDigit !== undefined) setPlusOneDigit(newState.plusOneDigit);
         if (newState.minusOneDigit !== undefined) setMinusOneDigit(newState.minusOneDigit);
@@ -129,11 +131,14 @@ export const useProblemState = (initialData = {}) => {
 
     return {
         // State
-        grid, minDigit, maxDigit, targetTotalDigits, rowCount, isMinusRows, isGenerating, isMinusAllowed,
+        grid, minDigit, maxDigit, targetTotalDigits, rowCount, isMinusRows, isGenerating,
+        hasMinus, complementStatus,
         plusOneDigit, minusOneDigit, enclosedDigit, sandwichedDigit, consecutiveDigit,
         firstRowFirstDigit, firstRowLastDigit, lastRowFirstDigit, lastRowLastDigit, answerFirstDigit, answerLastDigit,
         
-        // Stats
+        // Stats (export calculated stats. Note: complementStatus above overrides stats.complementStatus in naming,
+        // but since we want the configured status to reflect, we export the configured one.
+        // We can expose the calculated one if needed, but they should match after generation.)
         totalSum: stats.totalSum,
         frequency: stats.frequency,
         totalFrequency: stats.totalFrequency,
@@ -141,7 +146,7 @@ export const useProblemState = (initialData = {}) => {
         consecutive: stats.consecutive,
         rowDigitCounts: stats.rowDigitCounts,
         totalRowDigits: stats.totalRowDigits,
-        complementStatus: stats.complementStatus,
+        calculatedComplementStatus: stats.complementStatus, // Just in case we need the calculated one
         isEnclosedUsed: stats.isEnclosedUsed,
         isSandwichedUsed: stats.isSandwichedUsed,
         isConsecutiveUsed: stats.isConsecutiveUsed,
@@ -157,7 +162,7 @@ export const useProblemState = (initialData = {}) => {
         
         // Actions
         toggleRowMinus, updateDigit, updateRowDigitCount, generateRandomGrid, importState,
-        setMinDigit, setMaxDigit, setTargetTotalDigits, setRowCount, setIsMinusAllowed,
+        setMinDigit, setMaxDigit, setTargetTotalDigits, setRowCount, setHasMinus, setComplementStatus,
         setPlusOneDigit, setMinusOneDigit, setEnclosedDigit, setSandwichedDigit, setConsecutiveDigit,
         setFirstRowMin, setFirstRowMax, setLastRowMin, setLastRowMax, setAnswerMin, setAnswerMax
     };
