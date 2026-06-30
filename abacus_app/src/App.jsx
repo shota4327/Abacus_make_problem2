@@ -5,11 +5,33 @@ import ConditionManager from './components/ConditionManager';
 import MultiplicationContainer from './components/MultiplicationContainer';
 import DivisionContainer from './components/DivisionContainer';
 import { createInitialProblemState } from './constants/initialState';
+import { calculateProblemStats } from './utils/problemValidator';
 import './index.css';
+
+const validateProblemState = (p) => {
+  const stats = calculateProblemStats(p.grid, p.isMinusRows, p.rowCount, p.targetTotalDigits, p);
+  const isMinusValid = p.hasMinus === p.isMinusRows.some(Boolean);
+  const isComplementValid = p.complementStatus === (stats.complementStatus !== "なし");
+
+  return {
+      ...p,
+      isEnclosedUsed: stats.isEnclosedUsed,
+      isSandwichedUsed: stats.isSandwichedUsed,
+      isConsecutiveUsed: stats.isConsecutiveUsed,
+      isFirstMinValid: stats.isFirstMinValid,
+      isFirstMaxValid: stats.isFirstMaxValid,
+      isLastMinValid: stats.isLastMinValid,
+      isLastMaxValid: stats.isLastMaxValid,
+      isAnsMinValid: stats.isAnsMinValid,
+      isAnsMaxValid: stats.isAnsMaxValid,
+      isMinusValid,
+      isComplementValid
+  };
+};
 
 function App() {
   const [problems, setProblems] = useState(() =>
-    Array(10).fill(null).map(createInitialProblemState)
+    Array(10).fill(null).map(() => validateProblemState(createInitialProblemState()))
   );
   const [currentTab, setCurrentTab] = useState(0); // 0-9 or 'manager'
 
@@ -17,7 +39,7 @@ function App() {
   const handleUpdate = useCallback((index, newState) => {
     setProblems(prev => {
       const next = [...prev];
-      next[index] = newState;
+      next[index] = validateProblemState(newState);
       return next;
     });
   }, []);

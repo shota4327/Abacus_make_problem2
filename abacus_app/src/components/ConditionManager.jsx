@@ -1,10 +1,12 @@
 /* eslint-disable react-hooks/purity */
 import React, { useState } from 'react';
+import { generateProblemGrid } from '../utils/problemGenerator';
 import './ConditionManager.css';
 
 const ConditionManager = ({ problems, onUpdate }) => {
     // Active selector state: { problemIndex, key } | null
     const [activeSelector, setActiveSelector] = useState(null);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     const lengths = [5, 6, 7, 8, 9, 10, 11, 12];
     const totalOptions = [120, 130, 140];
@@ -48,8 +50,8 @@ const ConditionManager = ({ problems, onUpdate }) => {
             minConfig: { key: 'answerFirstDigit', options: digitOptions, isNullable: true, noZero: true, warnKey: 'isAnsMinValid' },
             maxConfig: { key: 'answerLastDigit', options: digitOptions, isNullable: true, warnKey: 'isAnsMaxValid' }
         },
-        { label: 'マイナス', key: 'hasMinus', type: 'toggle', format: val => val ? 'あり' : 'なし' },
-        { label: '補数計算', key: 'complementStatus', type: 'toggle', format: val => val ? '補数計算あり' : 'なし' },
+        { label: 'マイナス', key: 'hasMinus', type: 'toggle', format: val => val ? 'あり' : 'なし', warnKey: 'isMinusValid' },
+        { label: '補数計算', key: 'complementStatus', type: 'toggle', format: val => val ? '補数計算あり' : 'なし', warnKey: 'isComplementValid' },
     ];
 
     /**
@@ -413,11 +415,50 @@ const ConditionManager = ({ problems, onUpdate }) => {
         });
     };
 
+    const handleRegenerateAll = () => {
+        setIsGenerating(true);
+        // UIブロックを避けるため非同期で実行
+        setTimeout(() => {
+            const newProblems = problems.map(p => {
+                const { grid, isMinusRows } = generateProblemGrid({
+                    rowCount: p.rowCount,
+                    minDigit: p.minDigit,
+                    maxDigit: p.maxDigit,
+                    targetTotalDigits: p.targetTotalDigits,
+                    hasMinus: p.hasMinus,
+                    complementStatus: p.complementStatus,
+                    conditions: {
+                        firstRowFirstDigit: p.firstRowFirstDigit,
+                        firstRowLastDigit: p.firstRowLastDigit,
+                        lastRowFirstDigit: p.lastRowFirstDigit,
+                        lastRowLastDigit: p.lastRowLastDigit,
+                        answerFirstDigit: p.answerFirstDigit,
+                        answerLastDigit: p.answerLastDigit,
+                        plusOneDigit: p.plusOneDigit,
+                        minusOneDigit: p.minusOneDigit,
+                        enclosedDigit: p.enclosedDigit,
+                        sandwichedDigit: p.sandwichedDigit,
+                        consecutiveDigit: p.consecutiveDigit
+                    }
+                });
+                return { ...p, grid, isMinusRows };
+            });
+
+            newProblems.forEach((p, i) => {
+                onUpdate(i, p);
+            });
+            setIsGenerating(false);
+        }, 50);
+    };
+
     return (
         <div className="condition-manager-container">
             <div className="manager-header">
                 <h2 className="manager-title">作問条件一覧</h2>
-                <button className="all-random-btn" onClick={handleAllRandom}>
+                <button className="all-regenerate-btn" onClick={handleRegenerateAll} disabled={isGenerating}>
+                    すべて再生成
+                </button>
+                <button className="all-random-btn" onClick={handleAllRandom} disabled={isGenerating}>
                     すべてランダムに
                 </button>
             </div>
@@ -444,11 +485,13 @@ const ConditionManager = ({ problems, onUpdate }) => {
                                     if (rowConfig.type === 'toggle') {
                                         const rawVal = problemState[rowConfig.key] || false;
                                         const currentVal = rowConfig.format ? rowConfig.format(rawVal) : rawVal;
+                                        const isWarn = rowConfig.warnKey && problemState[rowConfig.warnKey] === false;
+                                        
                                         return (
                                             <td key={pIndex} className="cell-wrapper">
                                                 <div className="cell-container">
                                                     <button
-                                                        className={`cell-btn wide-text`}
+                                                        className={`cell-btn wide-text ${isWarn ? 'warn' : ''}`}
                                                         onClick={() => {
                                                             const newVal = !rawVal;
                                                             let updates = { [rowConfig.key]: newVal };
@@ -628,6 +671,11 @@ const ConditionManager = ({ problems, onUpdate }) => {
                     </tbody>
                 </table>
             </div>
+            {isGenerating && (
+                <div className="loading-overlay">
+                    <div className="loading-message">生成中...</div>
+                </div>
+            )}
         </div>
     );
 };

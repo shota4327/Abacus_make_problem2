@@ -33,15 +33,36 @@ export const useProblemState = (initialData = {}) => {
     const [answerFirstDigit, setAnswerMin] = useState(() => initialData.answerFirstDigit ?? null);
     const [answerLastDigit, setAnswerMax] = useState(() => initialData.answerLastDigit ?? null);
 
+    // --- 統計情報の計算 ---
+    const stats = useMemo(() => {
+        return calculateProblemStats(grid, isMinusRows, rowCount, targetTotalDigits, {
+            plusOneDigit, minusOneDigit, enclosedDigit, sandwichedDigit, consecutiveDigit,
+            firstRowFirstDigit, firstRowLastDigit, lastRowFirstDigit, lastRowLastDigit, answerFirstDigit, answerLastDigit
+        });
+    }, [grid, isMinusRows, rowCount, targetTotalDigits,
+        plusOneDigit, minusOneDigit, enclosedDigit, sandwichedDigit, consecutiveDigit,
+        firstRowFirstDigit, firstRowLastDigit, lastRowFirstDigit, lastRowLastDigit, answerFirstDigit, answerLastDigit
+    ]);
+
     // --- 現在の状態のスナップショット（保存用） ---
     const currentState = useMemo(() => ({
         grid, isMinusRows, hasMinus, complementStatus, minDigit, maxDigit, targetTotalDigits, rowCount,
         plusOneDigit, minusOneDigit, enclosedDigit, sandwichedDigit, consecutiveDigit,
-        firstRowFirstDigit, firstRowLastDigit, lastRowFirstDigit, lastRowLastDigit, answerFirstDigit, answerLastDigit
+        firstRowFirstDigit, firstRowLastDigit, lastRowFirstDigit, lastRowLastDigit, answerFirstDigit, answerLastDigit,
+        isEnclosedUsed: stats ? stats.isEnclosedUsed : true,
+        isSandwichedUsed: stats ? stats.isSandwichedUsed : true,
+        isConsecutiveUsed: stats ? stats.isConsecutiveUsed : true,
+        isFirstMinValid: stats ? stats.isFirstMinValid : true,
+        isFirstMaxValid: stats ? stats.isFirstMaxValid : true,
+        isLastMinValid: stats ? stats.isLastMinValid : true,
+        isLastMaxValid: stats ? stats.isLastMaxValid : true,
+        isAnsMinValid: stats ? stats.isAnsMinValid : true,
+        isAnsMaxValid: stats ? stats.isAnsMaxValid : true
     }), [
         grid, isMinusRows, hasMinus, complementStatus, minDigit, maxDigit, targetTotalDigits, rowCount,
         plusOneDigit, minusOneDigit, enclosedDigit, sandwichedDigit, consecutiveDigit,
-        firstRowFirstDigit, firstRowLastDigit, lastRowFirstDigit, lastRowLastDigit, answerFirstDigit, answerLastDigit
+        firstRowFirstDigit, firstRowLastDigit, lastRowFirstDigit, lastRowLastDigit, answerFirstDigit, answerLastDigit,
+        stats
     ]);
 
     // --- 操作用関数 ---
@@ -73,16 +94,7 @@ export const useProblemState = (initialData = {}) => {
         });
     }, []);
 
-    // --- 統計情報の計算 ---
-    const stats = useMemo(() => {
-        return calculateProblemStats(grid, isMinusRows, rowCount, targetTotalDigits, {
-            plusOneDigit, minusOneDigit, enclosedDigit, sandwichedDigit, consecutiveDigit,
-            firstRowFirstDigit, firstRowLastDigit, lastRowFirstDigit, lastRowLastDigit, answerFirstDigit, answerLastDigit
-        });
-    }, [grid, isMinusRows, rowCount, targetTotalDigits,
-        plusOneDigit, minusOneDigit, enclosedDigit, sandwichedDigit, consecutiveDigit,
-        firstRowFirstDigit, firstRowLastDigit, lastRowFirstDigit, lastRowLastDigit, answerFirstDigit, answerLastDigit
-    ]);
+    // --- 操作用関数 ---
 
     // --- ランダム問題の生成 ---
     const generateRandomGrid = useCallback(() => {
