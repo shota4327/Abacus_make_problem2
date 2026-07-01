@@ -283,47 +283,7 @@ const _generateMultiplicationProblems_internal = () => {
             return pScore + transScore;
         };
 
-        const tryMakePattern = (targetRowIdx, isConsecutive) => {
-            // targetRowIdxの特定インデックスと他の行をスワップしてパターンを作る総当たり
-            for (let i = 1; i < sideRows[targetRowIdx].len - (isConsecutive ? 1 : 2); i++) {
-                // スワップで実現したい数字
-                const neededVal = sideRows[targetRowIdx].digits[i]; 
-                // そのために書き換えるべき隣接インデックス
-                const targetIdxToChange = isConsecutive ? i + 1 : i + 2; 
-                
-                // 全ての他の行・中間インデックスから neededVal を探してスワップしてみる
-                for (let r2 = 0; r2 < 10; r2++) {
-                    if (r2 === targetRowIdx) continue;
-                    for (let j2 = 1; j2 < sideRows[r2].len - 1; j2++) {
-                        if (sideRows[r2].digits[j2] === neededVal) {
-                            // スワップ
-                            const oldVal = sideRows[targetRowIdx].digits[targetIdxToChange];
-                            sideRows[targetRowIdx].digits[targetIdxToChange] = neededVal;
-                            sideRows[r2].digits[j2] = oldVal;
-                            
-                            // スワップ後の評価
-                            // この行単体でのペナルティ、他行のペナルティ、全体の遷移ペナルティ
-                            const currentEval = evaluateSwap();
-                            // これから作る目標：
-                            // 連続を作っているなら、この行のcが1になっていれば良い。
-                            // 但し evaluateSwap で全体を評価した方が確実。
-                            
-                            if (currentEval === 0 || (isConsecutive && currentEval === 100) || (!isConsecutive && currentEval === 0)) {
-                                // 完璧になったら戻して次へ（後でまとめて判定する）
-                                // と思ったが、ここはインクリメンタルに作るので、
-                                // "連続を作った結果、残りのペナルティが囲み分（100）だけになっているか" 
-                                // "囲みを作った結果、ペナルティが0になっているか"
-                            }
-                            
-                            // 戻す
-                            sideRows[targetRowIdx].digits[targetIdxToChange] = oldVal;
-                            sideRows[r2].digits[j2] = neededVal;
-                        }
-                    }
-                }
-            }
-            return false;
-        };
+
 
         // よりシンプルな総当り：
         // ランダムにスワップを試行し、evaluateSwap() が 0 になるまでループ

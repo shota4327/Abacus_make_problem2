@@ -13,7 +13,6 @@ const ProblemContainer = ({ initialData, onUpdate, pageIndex }) => {
         maxDigit, setMaxDigit,
         targetTotalDigits, setTargetTotalDigits,
         setRowCount,
-        isMinusAllowed, setIsMinusAllowed,
         frequency, totalFrequency, frequencyDiffs,
         rowDigitCounts, totalRowDigits, updateRowDigitCount,
         generateRandomGrid,
