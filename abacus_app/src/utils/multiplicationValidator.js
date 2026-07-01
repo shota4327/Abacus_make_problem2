@@ -11,8 +11,16 @@
 const calculateFrequency = (dataSets) => {
     return dataSets.map(row => {
         const counts = Array(10).fill(0);
+        let foundNonZero = false;
         row.forEach(digit => {
             if (digit !== null && digit !== undefined && digit !== '') {
+                if (digit === 0 && !foundNonZero) {
+                    // Skip leading zeros
+                    return;
+                }
+                if (digit !== 0) {
+                    foundNonZero = true;
+                }
                 counts[digit]++;
             }
         });
@@ -41,7 +49,22 @@ const calculateTotalFrequency = (freqTable) => {
  * @returns {Array<number>} 各行の桁数
  */
 const calculateRowDigitCounts = (dataSets) => {
-    return dataSets.map(row => row.filter(digit => digit !== null && digit !== undefined && digit !== '').length);
+    return dataSets.map(row => {
+        let count = 0;
+        let foundNonZero = false;
+        row.forEach(digit => {
+            if (digit !== null && digit !== undefined && digit !== '') {
+                if (digit === 0 && !foundNonZero) {
+                    return; // Skip leading zeros
+                }
+                if (digit !== 0) {
+                    foundNonZero = true;
+                }
+                count++;
+            }
+        });
+        return count;
+    });
 };
 
 /**
@@ -50,49 +73,64 @@ const calculateRowDigitCounts = (dataSets) => {
  * @returns {Object} 統計情報
  */
 export const calculateMultiplicationStats = (problems) => {
-    // 1. 全体（左辺 + 右辺）の統計
-    const allRows = problems.map(p => [...p.left, ...p.right]);
-    const frequencyAll = calculateFrequency(allRows);
-    const totalFrequencyAll = calculateTotalFrequency(frequencyAll);
-    const rowDigitCountsAll = calculateRowDigitCounts(allRows);
-    const totalRowDigitsAll = rowDigitCountsAll.reduce((sum, count) => sum + count, 0);
-
-    // 掛け算の場合、全体の目標桁数は110（各数字11回）
-    const targetTotalDigitsAll = 110;
-    const frequencyDiffsAll = totalFrequencyAll.map(count => count - 11);
-
-    // 2. 左辺（かけられる数）のみの統計
+    // 1. 左辺（かけられる数）のみの統計
     const leftRows = problems.map(p => p.left);
     const frequencyLeft = calculateFrequency(leftRows);
     const totalFrequencyLeft = calculateTotalFrequency(frequencyLeft);
     const rowDigitCountsLeft = calculateRowDigitCounts(leftRows);
     const totalRowDigitsLeft = rowDigitCountsLeft.reduce((sum, count) => sum + count, 0);
 
-    // 3. 右辺（かける数）のみの統計
+    // 2. 右辺（かける数）のみの統計
     const rightRows = problems.map(p => p.right);
     const frequencyRight = calculateFrequency(rightRows);
     const totalFrequencyRight = calculateTotalFrequency(frequencyRight);
     const rowDigitCountsRight = calculateRowDigitCounts(rightRows);
     const totalRowDigitsRight = rowDigitCountsRight.reduce((sum, count) => sum + count, 0);
 
+    // 3. 全体（左辺 + 右辺）の統計
+    // 行ごとの頻度は左右の和を取る（頭の0を除外した結果同士を足す）
+    const frequencyAll = frequencyLeft.map((leftRowCounts, index) => {
+        return leftRowCounts.map((count, digit) => count + frequencyRight[index][digit]);
+    });
+    const totalFrequencyAll = calculateTotalFrequency(frequencyAll);
+    const rowDigitCountsAll = rowDigitCountsLeft.map((leftCount, index) => leftCount + rowDigitCountsRight[index]);
+    const totalRowDigitsAll = totalRowDigitsLeft + totalRowDigitsRight;
+
+    // 掛け算の場合、全体の目標桁数は110（各数字11回）
+    const targetTotalDigitsAll = 110;
+    const frequencyDiffsAll = totalFrequencyAll.map(count => count - 11);
+
     // 4. 連続文字のチェック（左辺、右辺それぞれの中で連続している数字をカウント）
     const consecutive = Array(10).fill(null).map(() => Array(10).fill(0)); // [d1][d2] マトリクス
 
     problems.forEach(p => {
-        // 左辺の連続チェック
-        for (let i = 0; i < p.left.length - 1; i++) {
+        // 左辺の連続チェック（頭の0をスキップ）
+        let foundNonZeroLeft = false;
+        let lastValidLeft = null;
+        for (let i = 0; i < p.left.length; i++) {
             const current = p.left[i];
-            const next = p.left[i + 1];
-            if (current !== null && next !== null) {
-                consecutive[current][next]++;
+            if (current !== null) {
+                if (current === 0 && !foundNonZeroLeft) continue;
+                foundNonZeroLeft = true;
+                if (lastValidLeft !== null) {
+                    consecutive[lastValidLeft][current]++;
+                }
+                lastValidLeft = current;
             }
         }
-        // 右辺の連続チェック
-        for (let i = 0; i < p.right.length - 1; i++) {
+        
+        // 右辺の連続チェック（頭の0をスキップ）
+        let foundNonZeroRight = false;
+        let lastValidRight = null;
+        for (let i = 0; i < p.right.length; i++) {
             const current = p.right[i];
-            const next = p.right[i + 1];
-            if (current !== null && next !== null) {
-                consecutive[current][next]++;
+            if (current !== null) {
+                if (current === 0 && !foundNonZeroRight) continue;
+                foundNonZeroRight = true;
+                if (lastValidRight !== null) {
+                    consecutive[lastValidRight][current]++;
+                }
+                lastValidRight = current;
             }
         }
     });

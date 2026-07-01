@@ -31,7 +31,8 @@ const MultiplicationContainer = () => {
 
         consecutive,
         generateRandomProblems,
-        replaceProblems
+        replaceProblems,
+        isGenerating
     } = useMultiplicationState();
 
     // Handlers for updating row digit counts (regeneration)
@@ -112,6 +113,12 @@ const MultiplicationContainer = () => {
                     </div>
                 </div>
             </div>
+
+            {isGenerating && (
+                <div className="loading-overlay">
+                    <div className="loading-message">作成中...</div>
+                </div>
+            )}
         </div>
     );
 };

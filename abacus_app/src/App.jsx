@@ -48,13 +48,17 @@ function App() {
     <div className="app-container">
       <Sidebar currentTab={currentTab} onTabChange={setCurrentTab} />
       <div className={`content-area ${currentTab === 'manager' ? 'manager-mode' : ''}`}>
-        {currentTab === 'multiplication' ? (
+        <div style={{ display: currentTab === 'multiplication' ? 'block' : 'none', height: '100%' }}>
           <MultiplicationContainer />
-        ) : currentTab === 'division' ? (
+        </div>
+        <div style={{ display: currentTab === 'division' ? 'block' : 'none', height: '100%' }}>
           <DivisionContainer />
-        ) : currentTab === 'manager' ? (
+        </div>
+        <div style={{ display: currentTab === 'manager' ? 'block' : 'none', height: '100%' }}>
           <ConditionManager problems={problems} onUpdate={handleUpdate} />
-        ) : (
+        </div>
+        
+        {typeof currentTab === 'number' && (
           // Key ensures component remounts when tab changes, resetting internal hook state to initialData
           <ProblemContainer
             key={currentTab}

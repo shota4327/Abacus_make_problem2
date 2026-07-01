@@ -184,19 +184,40 @@ const MultiplicationGrid = ({ problems, updateDigit, toggleDecimal, generateRand
         const val = digits[idx];
         if (val === null) return false;
 
-        // Check consecutive ( +/- 1 )
-        if (idx > 0 && digits[idx - 1] === val) return true;
-        if (idx < digits.length - 1 && digits[idx + 1] === val) return true;
+        // 「頭の0」かどうかを判定し、有効な数字のインデックスリストを作成する
+        let foundNonZero = false;
+        const validIndices = [];
+        let isLeadingZero = false;
+
+        for (let i = 0; i < digits.length; i++) {
+            const d = digits[i];
+            if (d !== null) {
+                if (d === 0 && !foundNonZero) {
+                    if (i === idx) isLeadingZero = true;
+                    continue; // 頭の0はスキップ
+                }
+                foundNonZero = true;
+                validIndices.push(i);
+            }
+        }
+
+        if (isLeadingZero) return false;
+
+        const vPos = validIndices.indexOf(idx);
+        if (vPos === -1) return false;
+
+        // Check consecutive ( +/- 1 ) (有効な数字間での隣接)
+        if (vPos > 0 && digits[validIndices[vPos - 1]] === val) return true;
+        if (vPos < validIndices.length - 1 && digits[validIndices[vPos + 1]] === val) return true;
 
         // Check 1-skip ( +/- 2 )
-        if (idx > 1 && digits[idx - 2] === val) return true;
-        if (idx < digits.length - 2 && digits[idx + 2] === val) return true;
+        if (vPos > 1 && digits[validIndices[vPos - 2]] === val) return true;
+        if (vPos < validIndices.length - 2 && digits[validIndices[vPos + 2]] === val) return true;
 
-        // Check sandwiched (neighbors match each other) ( A [B] A )
-        // Warn if this digit is between two identical digits
-        if (idx > 0 && idx < digits.length - 1) {
-            const prev = digits[idx - 1];
-            const next = digits[idx + 1];
+        // Check sandwiched ( A [B] A )
+        if (vPos > 0 && vPos < validIndices.length - 1) {
+            const prev = digits[validIndices[vPos - 1]];
+            const next = digits[validIndices[vPos + 1]];
             if (prev !== null && next !== null && prev === next) return true;
         }
 

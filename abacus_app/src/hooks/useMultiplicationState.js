@@ -8,6 +8,7 @@ export const useMultiplicationState = () => {
     const [problems, setProblems] = useState(() =>
         Array(10).fill(null).map(() => createInitialMultiplicationState())
     );
+    const [isGenerating, setIsGenerating] = useState(false);
 
     // 特定の問題の、特定の桁の数字を更新
     const updateDigit = useCallback((problemIndex, side, digitIndex, value) => {
@@ -50,8 +51,12 @@ export const useMultiplicationState = () => {
 
     // 10問すべてを一括でランダム生成
     const generateRandomProblems = useCallback(() => {
-        const newProblems = generateMultiplicationProblems();
-        setProblems(newProblems);
+        setIsGenerating(true);
+        setTimeout(() => {
+            const newProblems = generateMultiplicationProblems();
+            setProblems(newProblems);
+            setIsGenerating(false);
+        }, 10);
     }, []);
 
     // 現在の問題（problems）に基づき統計情報を計算
@@ -64,6 +69,7 @@ export const useMultiplicationState = () => {
         regenerateRow,
         generateRandomProblems,
         replaceProblems: setProblems,
+        isGenerating,
         
         // 統計情報をそのまま展開して返す
         ...stats 
