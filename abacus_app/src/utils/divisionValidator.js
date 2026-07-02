@@ -11,8 +11,15 @@
 const calculateFrequency = (dataSets) => {
     return dataSets.map(row => {
         const counts = Array(10).fill(0);
+        let foundNonZero = false;
         row.forEach(digit => {
             if (digit !== null && digit !== undefined && digit !== '') {
+                if (digit === 0 && !foundNonZero) {
+                    return; // Skip leading zeros
+                }
+                if (digit !== 0) {
+                    foundNonZero = true;
+                }
                 counts[digit]++;
             }
         });
@@ -41,7 +48,22 @@ const calculateTotalFrequency = (freqTable) => {
  * @returns {Array<number>} 各行の桁数
  */
 const calculateRowDigitCounts = (dataSets) => {
-    return dataSets.map(row => row.filter(digit => digit !== null && digit !== undefined && digit !== '').length);
+    return dataSets.map(row => {
+        let count = 0;
+        let foundNonZero = false;
+        row.forEach(digit => {
+            if (digit !== null && digit !== undefined && digit !== '') {
+                if (digit === 0 && !foundNonZero) {
+                    return; // Skip leading zeros
+                }
+                if (digit !== 0) {
+                    foundNonZero = true;
+                }
+                count++;
+            }
+        });
+        return count;
+    });
 };
 
 /**

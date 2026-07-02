@@ -8,6 +8,7 @@ export const useDivisionState = () => {
     const [problems, setProblems] = useState(() =>
         Array(10).fill(null).map(() => createInitialDivisionState())
     );
+    const [isGenerating, setIsGenerating] = useState(false);
 
     // 特定の問題の、特定の桁の数字を更新
     const updateDigit = useCallback((problemIndex, field, digitIndex, value) => {
@@ -51,8 +52,12 @@ export const useDivisionState = () => {
 
     // 10問すべてを一括でランダム生成
     const generateRandomProblems = useCallback(() => {
-        const newProblems = generateDivisionProblems();
-        setProblems(newProblems);
+        setIsGenerating(true);
+        setTimeout(() => {
+            const newProblems = generateDivisionProblems();
+            setProblems(newProblems);
+            setIsGenerating(false);
+        }, 10);
     }, []);
 
     // 現在の問題（problems）に基づき統計情報を計算
@@ -65,6 +70,7 @@ export const useDivisionState = () => {
         regenerateRow,
         generateRandomProblems,
         replaceProblems: setProblems,
+        isGenerating,
         
         // 統計情報をそのまま展開して返す
         ...stats 

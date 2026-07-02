@@ -1,306 +1,546 @@
 import { createInitialDivisionState } from '../constants/initialState.js';
 
-/**
- * 特定の問題の要素（割られる数、割る数、答え）の数字を指定された桁数で再生成します。
- * @param {Object} currentProblem - 現在の問題データ
- * @param {string} field - 'dividend', 'divisor', または 'answer'
- * @param {number|string} length - 桁数、または 'R'
- * @returns {Object} 更新された問題データ
- */
-export const regenerateDivisionRow = (currentProblem, field, length) => {
+export const regenerateDivisionRow = (currentProblem, side, length) => {
     const updatedProblem = { ...currentProblem };
-    
     let finalLength = length;
-    if (length === 'R') {
-        finalLength = Math.floor(Math.random() * 4) + 4; // 4〜7桁 (divisor/answerの場合)
-        if (field === 'dividend') {
-            finalLength = Math.floor(Math.random() * 7) + 8; // 8〜14桁
-        }
-    }
+    if (length === 'R') finalLength = Math.floor(Math.random() * 4) + 4;
 
-    // 0〜9の重複しない数字を生成
     const digitsPool = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
     for (let i = digitsPool.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [digitsPool[i], digitsPool[j]] = [digitsPool[j], digitsPool[i]];
     }
-    const newDigits = digitsPool.slice(0, finalLength > 10 ? 10 : finalLength);
-    
-    // 足りない分はランダムで補充
-    while (newDigits.length < finalLength) {
-        newDigits.push(Math.floor(Math.random() * 10));
-    }
+    const newDigits = digitsPool.slice(0, finalLength);
+    if (newDigits[0] === 0) [newDigits[0], newDigits[1]] = [newDigits[1], newDigits[0]];
 
-    // 先頭の数字が0にならないようにする
-    if (newDigits[0] === 0) {
-        if (newDigits.length > 1) {
-            [newDigits[0], newDigits[1]] = [newDigits[1], newDigits[0]];
+    const newArray = Array(7).fill(null);
+    const startIndex = 7 - finalLength;
+    for (let k = 0; k < finalLength; k++) newArray[startIndex + k] = newDigits[k];
+    updatedProblem[side] = newArray;
+
+    if (side === 'divisor') {
+        if (Math.random() < 0.3) {
+            const k = Math.floor(Math.random() * (finalLength - 1));
+            updatedProblem.decimalDivisor = startIndex + k;
         } else {
-            newDigits[0] = Math.floor(Math.random() * 9) + 1;
+            updatedProblem.decimalDivisor = null;
         }
+    } else {
+        updatedProblem.decimalAnswer = null;
     }
-
-    // 右詰めで配列にセット
-    const maxLength = field === 'dividend' ? 14 : 7;
-    const newArray = Array(maxLength).fill(null);
-    const startIndex = maxLength - finalLength;
-    for (let k = 0; k < finalLength; k++) {
-        newArray[startIndex + k] = newDigits[k];
-    }
-
-    updatedProblem[field] = newArray;
-
-    // 小数点はリセット
-    const decimalKey = 'decimal' + field.charAt(0).toUpperCase() + field.slice(1);
-    updatedProblem[decimalKey] = null;
-
     return updatedProblem;
 };
 
-/**
- * 除算の問題をランダムに一括生成します。
- * 乗算の制約（割る数と答えが各4〜7桁、合計10〜12桁、合計55桁）を適用し、
- * 四捨五入する問題（切り上げ2問、切り下げ2問）を生成します。
- * @returns {Array<Object>} 生成された10問の問題配列
- */
 export const generateDivisionProblems = () => {
-    // 1. 各行の桁数を決定（割る数と答えがそれぞれ合計55桁になるように、各問は合計10〜12桁）
-    let countsA, countsB; // A=割る数, B=答え
-    let countAttempts = 0;
+    let attempts = 0;
+    let bestProblems = null;
+    let bestScore = 0;
+    
+    while (attempts < 5000) {
+        attempts++;
+        const problems = _generateDivisionProblems_internal();
+        if (!problems) continue;
 
+        const firstDigitsSet = new Set();
+        for (const p of problems) {
+            let leftStr = p.answer.filter(d => d !== null).join('');
+            let rightStr = p.divisor.filter(d => d !== null).join('');
+            
+            let leftVal = parseInt(leftStr, 10);
+            let rightVal;
+            if (p.decimalDivisor !== null) {
+                const rightArr = p.divisor.map(d => d === null ? '' : d);
+                const decIdx = p.decimalDivisor;
+                const rStr = rightArr.slice(0, decIdx + 1).join('') + '.' + rightArr.slice(decIdx + 1).join('');
+                rightVal = parseFloat(rStr);
+            } else {
+                rightVal = parseInt(rightStr, 10);
+            }
+            
+            const ans = leftVal * rightVal;
+            const ansStr = ans.toString().replace('.', '');
+            let fd = null;
+            for(let i=0; i<ansStr.length; i++) {
+                if(ansStr[i] !== '0') {
+                    fd = ansStr[i];
+                    break;
+                }
+            }
+            if (fd) firstDigitsSet.add(fd);
+        }
+        
+        if (firstDigitsSet.size > bestScore) {
+            bestScore = firstDigitsSet.size;
+            bestProblems = problems;
+        }
+
+        if (firstDigitsSet.size === 9) {
+            return problems;
+        }
+    }
+    console.warn("フォールバックとして最も網羅率の高い(" + bestScore + ")結果を返します");
+    return bestProblems || Array(10).fill(null).map(() => createInitialDivisionState());
+};
+
+const _generateDivisionProblems_internal = () => {
+    let countsA, countsB;
+    let countAttempts = 0;
     while (countAttempts < 1000) {
         countAttempts++;
-
         const generateCounts = () => {
-            let array = Array(10).fill(0).map(() => Math.floor(Math.random() * 4) + 4); // 4-7桁
+            let array = Array(10).fill(0).map(() => Math.floor(Math.random() * 4) + 4);
             let sum = array.reduce((a, b) => a + b, 0);
             let safety = 0;
-            
             while (sum !== 55 && safety < 100) {
                 safety++;
                 const index = Math.floor(Math.random() * 10);
-                if (sum < 55 && array[index] < 7) {
-                    array[index]++;
-                    sum++;
-                } else if (sum > 55 && array[index] > 4) {
-                    array[index]--;
-                    sum--;
-                }
+                if (sum < 55 && array[index] < 7) { array[index]++; sum++; }
+                else if (sum > 55 && array[index] > 4) { array[index]--; sum--; }
             }
             return (sum === 55) ? array : null;
         };
-
         const ca = generateCounts();
         if (!ca) continue;
-
         const cb = generateCounts();
         if (!cb) continue;
-
         let valid = true;
         for (let i = 0; i < 10; i++) {
-            const total = ca[i] + cb[i];
-            if (total < 10 || total > 12) {
-                valid = false;
-                break;
-            }
+            if (ca[i] + cb[i] < 10 || ca[i] + cb[i] > 12) { valid = false; break; }
         }
-
-        if (valid) {
-            countsA = ca;
-            countsB = cb;
-            break;
-        }
+        if (valid) { countsA = ca; countsB = cb; break; }
     }
+    if (!countsA || !countsB) return null;
 
-    if (!countsA || !countsB) {
-        console.error("除算の桁数の生成に失敗しました");
-        return Array(10).fill(null).map(() => createInitialDivisionState());
-    }
-
-    // 2. 数字プールの作成
     const possibleDigits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-    for (let i = possibleDigits.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [possibleDigits[i], possibleDigits[j]] = [possibleDigits[j], possibleDigits[i]];
-    }
+    const shuffle = (arr) => {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+    };
+    shuffle(possibleDigits);
 
     const poolA_Base = [];
     const usedCounts = Array(10).fill(0);
-
     for (let i = 0; i < 10; i++) {
         const digit = possibleDigits[i];
         const count = (i < 5) ? 6 : 5;
         usedCounts[digit] += count;
         for (let k = 0; k < count; k++) poolA_Base.push(digit);
     }
-
     const poolB_Base = [];
     for (let digit = 0; digit <= 9; digit++) {
         const remaining = 11 - usedCounts[digit];
         for (let k = 0; k < remaining; k++) poolB_Base.push(digit);
     }
 
-    // 3. 最初の桁と最後の桁の制約を適用しつつ数値を割り当て
+    const pickTargets = () => {
+        const arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+        shuffle(arr);
+        return { consecutive: arr[0], sandwich: arr[1] };
+    };
+    const targetsA = pickTargets();
+    const targetsB = pickTargets();
+
     const setupSide = (counts, basePool) => {
         const rows = counts.map(len => ({ len, digits: Array(len).fill(null) }));
-
         const takeFromPool = (pool, val) => {
             const idx = pool.indexOf(val);
-            if (idx !== -1) {
-                pool.splice(idx, 1);
-                return val;
-            }
+            if (idx !== -1) { pool.splice(idx, 1); return val; }
             return null;
         };
-
-        // 末尾の数字は0-9を必ず1回ずつ使用
         const lastDigits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-        for (let i = lastDigits.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [lastDigits[i], lastDigits[j]] = [lastDigits[j], lastDigits[i]];
-        }
+        const rowIndices = Array.from({ length: 10 }, (_, i) => i);
+        shuffle(rowIndices);
+        rowIndices.forEach((rIdx, i) => { rows[rIdx].digits[rows[rIdx].len - 1] = takeFromPool(basePool, lastDigits[i]); });
 
-        for (let i = 0; i < 10; i++) {
-            rows[i].digits[rows[i].len - 1] = takeFromPool(basePool, lastDigits[i]);
-        }
+        const firstDigits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+        firstDigits.push(Math.floor(Math.random() * 9) + 1);
+        shuffle(firstDigits);
+        shuffle(rowIndices);
+        rowIndices.forEach((rIdx, i) => { rows[rIdx].digits[0] = takeFromPool(basePool, firstDigits[i]); });
 
-        // 残りの桁を埋める
-        for (let i = 0; i < 10; i++) {
-            for (let j = 0; j < rows[i].len - 1; j++) {
-                // 先頭が0にならないようにする
-                if (j === 0) {
-                    let nonZeroIdx = basePool.findIndex(v => v !== 0);
-                    if (nonZeroIdx !== -1 && !rows[i].digits.includes(basePool[nonZeroIdx])) {
-                        rows[i].digits[0] = takeFromPool(basePool, basePool[nonZeroIdx]);
-                        continue;
-                    }
-                }
-                
-                // 重複しないように選ぶ
-                for (let p = 0; p < basePool.length; p++) {
-                    if (!rows[i].digits.includes(basePool[p])) {
-                        rows[i].digits[j] = takeFromPool(basePool, basePool[p]);
-                        break;
-                    }
-                }
-                
-                // 万が一重複回避できなかったら適当なものを取る
-                if (rows[i].digits[j] === null && basePool.length > 0) {
-                    rows[i].digits[j] = basePool.shift();
-                }
+        shuffle(basePool);
+        rows.forEach(row => {
+            for (let k = 0; k < row.len; k++) {
+                if (row.digits[k] === null) row.digits[k] = basePool.pop();
             }
-        }
+        });
         return rows;
     };
 
-    const poolA = [...poolA_Base];
-    const poolB = [...poolB_Base];
+    const rowsA = setupSide(countsA, [...poolA_Base]);
+    const rowsB = setupSide(countsB, [...poolB_Base]);
 
-    // シャッフル
-    for (let i = poolA.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [poolA[i], poolA[j]] = [poolA[j], poolA[i]];
-    }
-    for (let i = poolB.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [poolB[i], poolB[j]] = [poolB[j], poolB[i]];
-    }
+    const getRowPatternScore = (rowDigits) => {
+        let score = 0;
+        for (let i = 0; i < rowDigits.length; i++) {
+            const digit = rowDigits[i];
+            if (digit === null) continue;
+            if (i > 0 && rowDigits[i - 1] === digit) score++;
+            if (i > 1 && rowDigits[i - 2] === digit) score++;
+        }
+        return score;
+    };
 
-    const divisorRows = setupSide(countsA, poolA); // 割る数
-    const answerRows = setupSide(countsB, poolB);  // 答え
+    const calculateTransitions = (rA, rB) => {
+        let score = 0;
+        const transitions = Array(10).fill(null).map(() => Array(10).fill(0));
+        rA.forEach(r => { for (let i = 0; i < r.digits.length - 1; i++) transitions[r.digits[i]][r.digits[i + 1]]++; });
+        rB.forEach(r => { for (let i = 0; i < r.digits.length - 1; i++) transitions[r.digits[i]][r.digits[i + 1]]++; });
+        for (let d1 = 0; d1 < 10; d1++) {
+            for (let d2 = 0; d2 < 10; d2++) {
+                if (transitions[d1][d2] >= 3) score += (transitions[d1][d2] - 2) * 1000;
+            }
+        }
+        return score;
+    };
 
-    // 4. 四捨五入の問題を設定（切り上げ2問、切り下げ2問）
-    const indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-    for (let i = indices.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [indices[i], indices[j]] = [indices[j], indices[i]];
+    const calculateTotalScoreOriginal = (rA, rB) => {
+        let score = 0;
+        rA.forEach(r => score += getRowPatternScore(r.digits));
+        rB.forEach(r => score += getRowPatternScore(r.digits));
+        score += calculateTransitions(rA, rB);
+        return score;
+    };
+
+    // 最適化ループ（パターンを0にする）
+    let currentScore = calculateTotalScoreOriginal(rowsA, rowsB);
+    const startTime = Date.now();
+    const DURATION = 2000;
+
+    while (Date.now() - startTime < DURATION) {
+        const isA = Math.random() < 0.5;
+        const targetRows = isA ? rowsA : rowsB;
+        const r1 = Math.floor(Math.random() * 10);
+        const r2 = Math.floor(Math.random() * 10);
+        
+        const getMiddles = (len) => {
+            const idxs = [];
+            for (let k = 1; k < len - 1; k++) idxs.push(k);
+            return idxs;
+        };
+        const mids1 = getMiddles(targetRows[r1].len);
+        const mids2 = getMiddles(targetRows[r2].len);
+        if (mids1.length === 0 || mids2.length === 0) continue;
+
+        const i1 = mids1[Math.floor(Math.random() * mids1.length)];
+        const i2 = mids2[Math.floor(Math.random() * mids2.length)];
+
+        const val1 = targetRows[r1].digits[i1];
+        const val2 = targetRows[r2].digits[i2];
+        targetRows[r1].digits[i1] = val2;
+        targetRows[r2].digits[i2] = val1;
+
+        const newScore = calculateTotalScoreOriginal(rowsA, rowsB);
+        if (newScore <= currentScore) {
+            currentScore = newScore;
+            if (newScore === 0) break;
+        } else {
+            targetRows[r1].digits[i1] = val1;
+            targetRows[r2].digits[i2] = val2;
+        }
     }
     
-    const roundUpIndices = indices.slice(0, 2);
-    const roundDownIndices = indices.slice(2, 4);
+    if (currentScore > 0) return null;
 
-    const problems = [];
-    for (let i = 0; i < 10; i++) {
-        const prob = createInitialDivisionState();
+    // 後処理：意図的なスワップでパターンを1つずつ作る
+    const applyPatternsPostProcess = (sideRows, targets, forbidden = { consecutiveDigit: null, sandwichOuter: null, sandwichInner: null }, maxLoops = 100000) => {
+        const evaluateSwap = () => {
+            let pScore = 0;
+            sideRows.forEach((r, idx) => {
+                let c = 0, s = 0;
+                for (let i = 0; i < r.digits.length; i++) {
+                    if (r.digits[i] === null) continue;
+                    if (i > 0 && r.digits[i - 1] === r.digits[i]) {
+                        c++;
+                        if (forbidden.consecutiveDigit !== null && forbidden.consecutiveDigit === r.digits[i]) {
+                            pScore += 1000;
+                        }
+                    }
+                    if (i > 1 && r.digits[i - 2] === r.digits[i]) {
+                        s++;
+                        if (forbidden.sandwichOuter !== null || forbidden.sandwichInner !== null) {
+                            if (r.digits[i] === forbidden.sandwichOuter || r.digits[i] === forbidden.sandwichInner ||
+                                r.digits[i - 1] === forbidden.sandwichOuter || r.digits[i - 1] === forbidden.sandwichInner) {
+                                pScore += 1000;
+                            }
+                        }
+                    }
+                }
+                if (idx === targets.consecutive) {
+                    if (c !== 1) pScore += 100;
+                    if (s > 0) pScore += 100;
+                } else if (idx === targets.sandwich) {
+                    if (s !== 1) pScore += 100;
+                    if (c > 0) pScore += 100;
+                } else {
+                    if (c > 0) pScore += 100;
+                    if (s > 0) pScore += 100;
+                }
+            });
+            const transScore = calculateTransitions(rowsA, rowsB);
+            return pScore + transScore;
+        };
 
-        // --- 割る数 (Divisor) ---
-        const dLen = divisorRows[i].len;
-        const dStartIndex = 7 - dLen;
-        let divisorValStr = "";
-        for (let j = 0; j < dLen; j++) {
-            const digit = divisorRows[i].digits[j];
-            prob.divisor[dStartIndex + j] = digit;
-            divisorValStr += digit;
-        }
-        
-        let divisorVal = parseInt(divisorValStr, 10);
-        
-        // 割る数に30%の確率で小数点を付与
-        if (Math.random() < 0.3) {
-            const k = Math.floor(Math.random() * (dLen - 1));
-            prob.decimalDivisor = dStartIndex + k; // 例: [null, 1, 2, 3, 4, null, null], k=1なら decimalDivisor = 2 (2の直後)
+
+
+        // よりシンプルな総当り：
+        // ランダムにスワップを試行し、evaluateSwap() が 0 になるまでループ
+        // 目標が明確（2つの特定行に1つずつ作るだけ）なので、総当りのほうが見つけやすい。
+        let pScore = evaluateSwap();
+        let loop = 0;
+        while(pScore > 0 && loop < maxLoops) {
+            loop++;
+            const r1 = Math.floor(Math.random() * 10);
+            const r2 = Math.floor(Math.random() * 10);
+            if (r1 === r2) continue;
             
-            // 小数点の位置に応じて値を調整
-            // 例: "1234" で k=1 の場合 "12.34" となり、本来の値は 12.34。
-            const decimalShift = dLen - 1 - k;
-            divisorVal = divisorVal / Math.pow(10, decimalShift);
+            const i1 = Math.floor(Math.random() * (sideRows[r1].len - 2)) + 1;
+            const i2 = Math.floor(Math.random() * (sideRows[r2].len - 2)) + 1;
+            
+            const val1 = sideRows[r1].digits[i1];
+            const val2 = sideRows[r2].digits[i2];
+            sideRows[r1].digits[i1] = val2;
+            sideRows[r2].digits[i2] = val1;
+            
+            const newScore = evaluateSwap();
+            // 山登り（同じか良くなったら採用）
+            if (newScore <= pScore) {
+                pScore = newScore;
+            } else {
+                // 戻す
+                sideRows[r1].digits[i1] = val1;
+                sideRows[r2].digits[i2] = val2;
+            }
         }
+        return pScore === 0;
+    };
 
-        // --- 答え (Answer) ---
-        const aLen = answerRows[i].len;
-        const aStartIndex = 7 - aLen;
-        let answerValStr = "";
-        for (let j = 0; j < aLen; j++) {
-            const digit = answerRows[i].digits[j];
-            prob.answer[aStartIndex + j] = digit;
-            answerValStr += digit;
+    if (!applyPatternsPostProcess(rowsA, targetsA, { consecutiveDigit: null, sandwichOuter: null, sandwichInner: null }, 100000)) return null;
+    
+    // A側で作られたパターン構成数字を抽出
+    const extractPatternDigits = (sideRows, targets) => {
+        let consecutiveDigit = null;
+        let sandwichOuter = null;
+        let sandwichInner = null;
+
+        const cRow = sideRows[targets.consecutive].digits;
+        for (let i = 1; i < cRow.length; i++) {
+            if (cRow[i] !== null && cRow[i] === cRow[i - 1]) consecutiveDigit = cRow[i];
         }
-        let answerVal = parseInt(answerValStr, 10);
-
-        // --- 割られる数 (Dividend) の計算 ---
-        let dividendVal = 0;
         
-        if (roundUpIndices.includes(i)) {
-            // 切り上げ（例: 答えが123なら、本来の答えは122.5〜122.9）
-            const remainderRatio = 0.5 + (Math.random() * 0.4); // 0.5 - 0.9
-            const remainder = divisorVal * remainderRatio;
-            dividendVal = (divisorVal * (answerVal - 1)) + remainder;
-        } else if (roundDownIndices.includes(i)) {
-            // 切り下げ（例: 答えが123なら、本来の答えは123.1〜123.4）
-            const remainderRatio = 0.1 + (Math.random() * 0.3); // 0.1 - 0.4
-            const remainder = divisorVal * remainderRatio;
-            dividendVal = (divisorVal * answerVal) + remainder;
-        } else {
-            // 割り切れる
-            dividendVal = divisorVal * answerVal;
+        const sRow = sideRows[targets.sandwich].digits;
+        for (let i = 2; i < sRow.length; i++) {
+            if (sRow[i] !== null && sRow[i] === sRow[i - 2]) {
+                sandwichOuter = sRow[i];
+                sandwichInner = sRow[i - 1];
+            }
         }
+        return { consecutiveDigit, sandwichOuter, sandwichInner };
+    };
 
-        // JavaScriptの浮動小数点誤差を軽減するため、特定の桁で丸める
-        let divStr = dividendVal.toFixed(6).replace(/\.?0+$/, ""); 
+    const forbiddenB = extractPatternDigits(rowsA, targetsA);
+
+    // B側の最適化（抽出した数字を同種のパターンで使わないようにする、探索回数を30万回に増強）
+    if (!applyPatternsPostProcess(rowsB, targetsB, forbiddenB, 300000)) return null;
+
+    // ============================================
+    // 除算における小数の付与と割られる数(Dividend)の計算
+    // ============================================
+    
+    // パターンが設定された行（連続文字、囲み文字）は1未満の数などの対象から外す
+    const isPatternRow = (rIdx) => (rIdx === targetsB.consecutive || rIdx === targetsB.sandwich);
+
+    const availableRowsForDecimal = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(r => !isPatternRow(r));
+    shuffle(availableRowsForDecimal);
+
+    // 小数が付くのは4問
+    const decimalRows = availableRowsForDecimal.slice(0, 4);
+    // そのうち1つは1未満の数
+    const lessThanOneRow = decimalRows[0];
+    const normalDecimalRows = decimalRows.slice(1, 4);
+    const intRows = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(r => !decimalRows.includes(r));
+
+    const finalProblems = [];
+    let upCount = 0;
+    let downCount = 0;
+
+    const rowConfigs = Array(10).fill(null);
+
+    // まず1未満の数について自然な Dividend を決定し、四捨五入タイプを確定させる
+    {
+        const rIdx = lessThanOneRow;
+        const A = parseInt(rowsA[rIdx].digits.join(''), 10);
+        let B_val, B_str, decIdx, zc = 0, newLen = rowsB[rIdx].len;
         
-        // divStr が長すぎる場合（最大14マス）、切り詰める
-        if (divStr.replace(".", "").length > 14) {
-            divStr = parseFloat(divStr).toPrecision(14).replace(/\.?0+e.*$/, "");
+        zc = Math.floor(Math.random() * 3) + 1; // 1, 2, 3
+        while (newLen + zc > 7 && newLen > 2) newLen--;
+        while (newLen + zc > 7 && zc > 0) zc--;
+        if (zc <= 0) return null; // 生成失敗
+        
+        B_str = "";
+        for(let i=0; i<zc; i++) B_str += "0";
+        B_str += rowsB[rIdx].digits.slice(0, newLen).join('');
+        decIdx = zc - 1;
+        B_val = parseFloat(B_str.slice(0, decIdx + 1) + "." + B_str.slice(decIdx + 1));
+        
+        let Dividend = Math.round(A * B_val);
+        let actualA = Math.round(Dividend / B_val);
+        let safety = 0;
+        let direction = actualA < A ? 1 : -1;
+        while (actualA !== A && safety < 100) {
+            Dividend += direction;
+            actualA = Math.round(Dividend / B_val);
+            safety++;
         }
+        if (actualA !== A) return null;
 
-        // 割られる数の配列にセット
-        const hasDivDecimal = divStr.includes('.');
-        const divDigitsStr = divStr.replace('.', '');
-        const divOffset = 14 - divDigitsStr.length;
+        const quotient = Dividend / B_val;
+        let type = 'int';
+        if (Math.abs(quotient - A) > 1e-9) {
+            const decPart = (quotient % 1 + 1) % 1; // JSの負の余り対策
+            if (decPart >= 0.5) type = 'up';
+            else if (decPart > 1e-9) type = 'down';
+        }
         
-        for (let j = 0; j < divDigitsStr.length; j++) {
-            if (divOffset + j >= 0 && divOffset + j < 14) {
-                prob.dividend[divOffset + j] = parseInt(divDigitsStr[j], 10);
+        if (type === 'up') upCount++;
+        else if (type === 'down') downCount++;
+
+        rowConfigs[rIdx] = { isDecimal: true, isLessThanOne: true, B_str, decIdx, zc, newLen, B_val, Dividend, type };
+    }
+
+    // 残りの小数行3つについて、まだ足りないup/downがあれば意図的にDividendをずらして作る。
+    // 小数であれば B_val > 1 なので、整数 Dividend を1ずらすと商が 1/B_val (1未満) ずれるため
+    // うまく狙った範囲に入らない可能性がある。
+    // だが、B_val は必ず 1 以上 (例: 1.234) であり、4桁〜7桁の数字を小数点1〜6個ずらしたもの。
+    // 試行錯誤で Dividend を探す。
+    for (const rIdx of normalDecimalRows) {
+        const A = parseInt(rowsA[rIdx].digits.join(''), 10);
+        const B_str = rowsB[rIdx].digits.join('');
+        const decIdx = Math.floor(Math.random() * (rowsB[rIdx].len - 1));
+        const B_val = parseFloat(B_str.slice(0, decIdx + 1) + "." + B_str.slice(decIdx + 1));
+
+        let neededType = 'int';
+        if (upCount < 2) neededType = 'up';
+        else if (downCount < 2) neededType = 'down';
+
+        let Dividend = Math.round(A * B_val);
+        let type = 'int';
+        let actualA = Math.round(Dividend / B_val);
+        
+        if (neededType === 'up') {
+            // 切り上げになるまで増やす
+            let safety = 0;
+            while(safety < 100) {
+                actualA = Math.round(Dividend / B_val);
+                if (actualA !== A) { Dividend -= 1; break; } // Aを超えたら戻る
+                const q = Dividend / B_val;
+                const decPart = (q % 1 + 1) % 1;
+                if (decPart >= 0.5) { type = 'up'; break; }
+                Dividend++;
+                safety++;
+            }
+        } else if (neededType === 'down') {
+            let safety = 0;
+            while(safety < 100) {
+                actualA = Math.round(Dividend / B_val);
+                if (actualA !== A) { Dividend += 1; break; } 
+                const q = Dividend / B_val;
+                const decPart = (q % 1 + 1) % 1;
+                if (decPart >= 0.01 && decPart < 0.5) { type = 'down'; break; }
+                Dividend--;
+                safety++;
             }
         }
 
-        if (hasDivDecimal) {
-            const dotPos = divStr.indexOf('.');
-            prob.decimalDividend = divOffset + dotPos - 1;
+        // 最終確認
+        actualA = Math.round(Dividend / B_val);
+        if (actualA !== A) return null; // どうしてもうまくいかなかったら破棄
+        
+        const q = Dividend / B_val;
+        const decPart = (q % 1 + 1) % 1;
+        if (Math.abs(q - A) > 1e-9) {
+            if (decPart >= 0.5) type = 'up';
+            else if (decPart > 1e-9) type = 'down';
+        } else {
+            type = 'int';
         }
+        
+        if (type === 'up') upCount++;
+        else if (type === 'down') downCount++;
 
-        problems.push(prob);
+        rowConfigs[rIdx] = { isDecimal: true, isLessThanOne: false, B_str, decIdx, zc: 0, newLen: rowsB[rIdx].len, B_val, Dividend, type };
     }
 
-    return problems;
+    if (upCount > 2 || downCount > 2) return null;
+
+    // 残りの整数行 (6問) で目標を埋める
+    const neededUp = 2 - upCount;
+    const neededDown = 2 - downCount;
+    let assignIdx = 0;
+    
+    for (const rIdx of intRows) {
+        const A = parseInt(rowsA[rIdx].digits.join(''), 10);
+        const B_str = rowsB[rIdx].digits.join('');
+        const B_val = parseInt(B_str, 10);
+        
+        let type = 'int';
+        if (assignIdx < neededUp) type = 'up';
+        else if (assignIdx < neededUp + neededDown) type = 'down';
+        
+        assignIdx++;
+        
+        let Dividend;
+        if (type === 'up') {
+            const fraction = 0.5 + Math.random() * 0.4;
+            Dividend = (A - 1) * B_val + Math.floor(B_val * fraction);
+        } else if (type === 'down') {
+            const fraction = 0.1 + Math.random() * 0.3;
+            Dividend = A * B_val + Math.floor(B_val * fraction);
+        } else {
+            Dividend = A * B_val;
+        }
+
+        rowConfigs[rIdx] = { isDecimal: false, isLessThanOne: false, B_str, decIdx: null, zc: 0, newLen: rowsB[rIdx].len, B_val, Dividend, type };
+    }
+
+    for (let i = 0; i < 10; i++) {
+        const p = createInitialDivisionState();
+        const rA = rowsA[i]; // Answer
+        const rB = rowsB[i]; // Divisor
+        const conf = rowConfigs[i];
+
+        // Answer
+        for (let k = 0; k < rA.len; k++) p.answer[7 - rA.len + k] = rA.digits[k];
+
+        // Divisor
+        if (conf.isLessThanOne) {
+            const startIdx = 7 - (conf.newLen + conf.zc);
+            for (let k = 0; k < conf.zc; k++) p.divisor[startIdx + k] = 0;
+            for (let k = 0; k < conf.newLen; k++) p.divisor[startIdx + conf.zc + k] = rB.digits[k];
+            p.decimalDivisor = startIdx + conf.zc - 1;
+        } else if (conf.isDecimal) {
+            for (let k = 0; k < conf.newLen; k++) p.divisor[7 - conf.newLen + k] = rB.digits[k];
+            p.decimalDivisor = 7 - conf.newLen + conf.decIdx;
+        } else {
+            for (let k = 0; k < conf.newLen; k++) p.divisor[7 - conf.newLen + k] = rB.digits[k];
+        }
+
+        // Dividend
+        const divStr = conf.Dividend.toString();
+        const divLen = divStr.length;
+        const divOffset = 12 - divLen;
+        for (let j = 0; j < divLen; j++) {
+            if (divOffset + j >= 0 && divOffset + j < 12) {
+                p.dividend[divOffset + j] = parseInt(divStr[j], 10);
+            }
+        }
+        // Save roundType for UI highlighting
+        p.roundType = conf.type;
+        
+        finalProblems.push(p);
+    }
+    
+    return finalProblems;
 };

@@ -143,15 +143,40 @@ const DivisionGrid = ({ problems, updateDigit, toggleDecimal, generateRandomProb
     const shouldHighlight = (digits, idx) => {
         const val = digits[idx];
         if (val === null) return false;
-        if (idx > 0 && digits[idx - 1] === val) return true;
-        if (idx < digits.length - 1 && digits[idx + 1] === val) return true;
-        if (idx > 1 && digits[idx - 2] === val) return true;
-        if (idx < digits.length - 2 && digits[idx + 2] === val) return true;
-        if (idx > 0 && idx < digits.length - 1) {
-            const prev = digits[idx - 1];
-            const next = digits[idx + 1];
+
+        let foundNonZero = false;
+        const validIndices = [];
+        let isLeadingZero = false;
+
+        for (let i = 0; i < digits.length; i++) {
+            const d = digits[i];
+            if (d !== null) {
+                if (d === 0 && !foundNonZero) {
+                    if (i === idx) isLeadingZero = true;
+                    continue; // 頭の0はスキップ
+                }
+                foundNonZero = true;
+                validIndices.push(i);
+            }
+        }
+
+        if (isLeadingZero) return false;
+
+        const vPos = validIndices.indexOf(idx);
+        if (vPos === -1) return false;
+
+        if (vPos > 0 && digits[validIndices[vPos - 1]] === val) return true;
+        if (vPos < validIndices.length - 1 && digits[validIndices[vPos + 1]] === val) return true;
+
+        if (vPos > 1 && digits[validIndices[vPos - 2]] === val) return true;
+        if (vPos < validIndices.length - 2 && digits[validIndices[vPos + 2]] === val) return true;
+
+        if (vPos > 0 && vPos < validIndices.length - 1) {
+            const prev = digits[validIndices[vPos - 1]];
+            const next = digits[validIndices[vPos + 1]];
             if (prev !== null && next !== null && prev === next) return true;
         }
+
         return false;
     };
 
@@ -160,19 +185,23 @@ const DivisionGrid = ({ problems, updateDigit, toggleDecimal, generateRandomProb
             activeCell?.field === field &&
             activeCell?.colIndex === colIndex;
 
-        // 小数点のボタンは割る数（divisor）だけにつける
+        const prob = problems[problemIndex];
         const showDecimal = field === 'divisor' && colIndex < 6;
         const decimalKey = 'decimal' + field.charAt(0).toUpperCase() + field.slice(1);
-        const isDecimalActive = problems[problemIndex][decimalKey] === colIndex;
+        const isDecimalActive = prob[decimalKey] === colIndex;
 
-        const prob = problems[problemIndex];
         const digits = prob[field];
-        const isHighlighted = shouldHighlight(digits, colIndex);
+        const isHighlighted = field !== 'dividend' && shouldHighlight(digits, colIndex);
+        
+        let roundClass = '';
+        if (field === 'answer' && prob.roundType) {
+            roundClass = `round-${prob.roundType}`;
+        }
 
         return (
-            <div key={`${field}-${colIndex}`} className="digit-btn-wrapper">
+            <div key={`${field}-${colIndex}`} className={`digit-btn-wrapper digit-btn-wrapper-${field}`}>
                 <button
-                    className={`digit-btn ${isActive ? 'active' : ''} ${isHighlighted ? 'highlight-same' : ''}`}
+                    className={`digit-btn ${isActive ? 'active' : ''} ${isHighlighted ? 'highlight-same' : ''} ${roundClass}`}
                     onClick={(e) => {
                         e.stopPropagation();
                         setActiveCell({ problemIndex, field, colIndex });

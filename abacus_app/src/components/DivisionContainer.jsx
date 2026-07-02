@@ -32,7 +32,8 @@ const DivisionContainer = () => {
 
         consecutive,
         generateRandomProblems,
-        replaceProblems
+        replaceProblems,
+        isGenerating
     } = useDivisionState();
 
     // Handlers for updating row digit counts (regeneration)
@@ -118,6 +119,12 @@ const DivisionContainer = () => {
                     </div>
                 </div>
             </div>
+
+            {isGenerating && (
+                <div className="loading-overlay">
+                    <div className="loading-message">作成中...</div>
+                </div>
+            )}
         </div>
     );
 };
