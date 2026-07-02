@@ -36,7 +36,7 @@ export const generateDivisionProblems = () => {
     let bestProblems = null;
     let bestScore = 0;
     
-    while (attempts < 5000) {
+    while (attempts < 50) {
         attempts++;
         const problems = _generateDivisionProblems_internal();
         if (!problems) continue;
@@ -346,20 +346,68 @@ const _generateDivisionProblems_internal = () => {
     if (!applyPatternsPostProcess(rowsB, targetsB, forbiddenB, 300000)) return null;
 
     // ============================================
+    // 割られる数の先頭数字が1〜9を網羅するペアリングを見つける
+    // ============================================
+    let foundValidPairing = false;
+    rowsB.forEach((row, idx) => {
+        row.originalIdx = idx;
+    });
+
+    for (let shuffleAttempt = 0; shuffleAttempt < 50000; shuffleAttempt++) {
+        for (let i = rowsB.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [rowsB[i], rowsB[j]] = [rowsB[j], rowsB[i]];
+        }
+
+        const firstDigitsSet = new Set();
+        for (let i = 0; i < 10; i++) {
+            const leftVal = parseInt(rowsA[i].digits.join(''), 10);
+            const rightVal = parseInt(rowsB[i].digits.join(''), 10);
+            const ans = leftVal * rightVal;
+            const ansStr = ans.toString();
+            let fd = null;
+            for(let k = 0; k < ansStr.length; k++) {
+                if(ansStr[k] !== '0') {
+                    fd = ansStr[k];
+                    break;
+                }
+            }
+            if (fd) firstDigitsSet.add(fd);
+        }
+
+        if (firstDigitsSet.size === 9) {
+            foundValidPairing = true;
+            break;
+        }
+    }
+
+    if (!foundValidPairing) return null;
+
+    // ============================================
     // 除算における小数の付与と割られる数(Dividend)の計算
     // ============================================
     
     // パターンが設定された行（連続文字、囲み文字）は1未満の数などの対象から外す
-    const isPatternRow = (rIdx) => (rIdx === targetsB.consecutive || rIdx === targetsB.sandwich);
+    const isPatternRow = (rIdx) => {
+        const originalIdx = rowsB[rIdx].originalIdx;
+        return (originalIdx === targetsB.consecutive || originalIdx === targetsB.sandwich);
+    };
 
     const availableRowsForDecimal = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(r => !isPatternRow(r));
     shuffle(availableRowsForDecimal);
 
-    // 小数が付くのは4問
-    const decimalRows = availableRowsForDecimal.slice(0, 4);
-    // そのうち1つは1未満の数
-    const lessThanOneRow = decimalRows[0];
-    const normalDecimalRows = decimalRows.slice(1, 4);
+    // 1未満の数になれるのは、桁数が6以下の行のみ（zc=1以上を付加しても枠からはみ出ないようにするため）
+    const possibleLessThanOneRows = availableRowsForDecimal.filter(r => rowsB[r].len <= 6);
+    if (possibleLessThanOneRows.length === 0) return null; // やり直し
+
+    const lessThanOneRow = possibleLessThanOneRows[0];
+    
+    // 他の小数行
+    const remainingDecimalRows = availableRowsForDecimal.filter(r => r !== lessThanOneRow);
+    if (remainingDecimalRows.length < 3) return null;
+
+    const normalDecimalRows = remainingDecimalRows.slice(0, 3);
+    const decimalRows = [lessThanOneRow, ...normalDecimalRows];
     const intRows = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(r => !decimalRows.includes(r));
 
     const finalProblems = [];
@@ -375,8 +423,7 @@ const _generateDivisionProblems_internal = () => {
         let B_val, B_str, decIdx, zc = 0, newLen = rowsB[rIdx].len;
         
         zc = Math.floor(Math.random() * 3) + 1; // 1, 2, 3
-        while (newLen + zc > 7 && newLen > 2) newLen--;
-        while (newLen + zc > 7 && zc > 0) zc--;
+        while (newLen + zc > 7) zc--; // 枠に収まるように zc を制限する（newLen は削らない）
         if (zc <= 0) return null; // 生成失敗
         
         B_str = "";

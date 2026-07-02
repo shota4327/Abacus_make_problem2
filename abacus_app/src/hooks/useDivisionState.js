@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { regenerateDivisionRow } from '../utils/divisionGenerator';
 import { calculateDivisionStats } from '../utils/divisionValidator';
 import { createInitialDivisionState } from '../constants/initialState';
+import DivisionWorker from '../workers/divisionWorker.js?worker&inline';
 
 export const useDivisionState = () => {
     // 10問分の状態を初期化
@@ -55,7 +56,7 @@ export const useDivisionState = () => {
         if (isGenerating) return; // 既に生成中の場合は何もしない
         setIsGenerating(true);
         
-        const worker = new Worker(new URL('../workers/divisionWorker.js', import.meta.url), { type: 'module' });
+        const worker = new DivisionWorker();
         
         worker.onmessage = (e) => {
             if (e.data.type === 'SUCCESS') {

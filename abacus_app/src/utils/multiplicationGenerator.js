@@ -33,53 +33,14 @@ export const regenerateMultiplicationRow = (currentProblem, side, length) => {
 
 export const generateMultiplicationProblems = () => {
     let attempts = 0;
-    let bestProblems = null;
-    let bestScore = 0;
     
-    while (attempts < 5000) {
+    while (attempts < 50) {
         attempts++;
         const problems = _generateMultiplicationProblems_internal();
-        if (!problems) continue;
-
-        const firstDigitsSet = new Set();
-        for (const p of problems) {
-            let leftStr = p.left.filter(d => d !== null).join('');
-            let rightStr = p.right.filter(d => d !== null).join('');
-            
-            let leftVal = parseInt(leftStr, 10);
-            let rightVal;
-            if (p.decimalRight !== null) {
-                const rightArr = p.right.map(d => d === null ? '' : d);
-                const decIdx = p.decimalRight;
-                const rStr = rightArr.slice(0, decIdx + 1).join('') + '.' + rightArr.slice(decIdx + 1).join('');
-                rightVal = parseFloat(rStr);
-            } else {
-                rightVal = parseInt(rightStr, 10);
-            }
-            
-            const ans = leftVal * rightVal;
-            const ansStr = ans.toString().replace('.', '');
-            let fd = null;
-            for(let i=0; i<ansStr.length; i++) {
-                if(ansStr[i] !== '0') {
-                    fd = ansStr[i];
-                    break;
-                }
-            }
-            if (fd) firstDigitsSet.add(fd);
-        }
-        
-        if (firstDigitsSet.size > bestScore) {
-            bestScore = firstDigitsSet.size;
-            bestProblems = problems;
-        }
-
-        if (firstDigitsSet.size === 9) {
-            return problems;
-        }
+        if (problems) return problems;
     }
-    console.warn("フォールバックとして最も網羅率の高い(" + bestScore + ")結果を返します");
-    return bestProblems || Array(10).fill(null).map(() => createInitialMultiplicationState());
+    console.warn("フォールバックとして結果を返します");
+    return Array(10).fill(null).map(() => createInitialMultiplicationState());
 };
 
 const _generateMultiplicationProblems_internal = () => {
@@ -345,6 +306,45 @@ const _generateMultiplicationProblems_internal = () => {
     // B側の最適化（抽出した数字を同種のパターンで使わないようにする、探索回数を30万回に増強）
     if (!applyPatternsPostProcess(rowsB, targetsB, forbiddenB, 300000)) return null;
 
+    // シャッフル前の元のインデックスを保持
+    rowsB.forEach((r, idx) => { r.originalIdx = idx; });
+
+    let foundValidPairing = false;
+    let shuffleAttempts = 0;
+    while (shuffleAttempts < 5000) {
+        shuffleAttempts++;
+        if (shuffleAttempts > 1) {
+            // rowsB をシャッフル
+            for (let i = 9; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [rowsB[i], rowsB[j]] = [rowsB[j], rowsB[i]];
+            }
+        }
+        
+        const firstDigitsSet = new Set();
+        for (let i = 0; i < 10; i++) {
+            const leftVal = parseInt(rowsA[i].digits.join(''), 10);
+            const rightVal = parseInt(rowsB[i].digits.join(''), 10);
+            const ans = leftVal * rightVal;
+            const ansStr = ans.toString();
+            let fd = null;
+            for(let k = 0; k < ansStr.length; k++) {
+                if(ansStr[k] !== '0') {
+                    fd = ansStr[k];
+                    break;
+                }
+            }
+            if (fd) firstDigitsSet.add(fd);
+        }
+
+        if (firstDigitsSet.size === 9) {
+            foundValidPairing = true;
+            break;
+        }
+    }
+
+    if (!foundValidPairing) return null;
+
     // ============================================
     // 小数点のロジック（四捨五入バランスと1未満の数）
     // ============================================
@@ -362,15 +362,16 @@ const _generateMultiplicationProblems_internal = () => {
         const rAStr = rowsA[rIdx].digits.join('');
         
         // パターンが設定された行は1未満の数（切り詰め）の対象から外す
-        const isPatternRow = (rIdx === targetsB.consecutive || rIdx === targetsB.sandwich);
+        const isPatternRow = (rowsB[rIdx].originalIdx === targetsB.consecutive || rowsB[rIdx].originalIdx === targetsB.sandwich);
         
         if (!isPatternRow) {
             // 1未満の候補（zeroCount 1, 2, 3 全て試す）
             for (let zc = 1; zc <= 3; zc++) {
                 let tempLen = rowsB[rIdx].len;
                 let tempZC = zc;
-                while (tempLen + tempZC > 7 && tempLen > 2) tempLen--;
-                while (tempLen + tempZC > 7 && tempZC > 0) tempZC--;
+                if (tempLen + tempZC > 7) {
+                    continue; // 枠に収まらない場合は候補にしない
+                }
                 if (tempZC > 0) {
                     let rBStr = "";
                     for(let i = 0; i < tempZC; i++) rBStr += "0";

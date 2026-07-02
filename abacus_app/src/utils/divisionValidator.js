@@ -14,13 +14,14 @@ const calculateFrequency = (dataSets) => {
         let foundNonZero = false;
         row.forEach(digit => {
             if (digit !== null && digit !== undefined && digit !== '') {
-                if (digit === 0 && !foundNonZero) {
+                const num = Number(digit);
+                if (num === 0 && !foundNonZero) {
                     return; // Skip leading zeros
                 }
-                if (digit !== 0) {
+                if (num !== 0) {
                     foundNonZero = true;
                 }
-                counts[digit]++;
+                counts[num]++;
             }
         });
         return counts;
@@ -53,10 +54,11 @@ const calculateRowDigitCounts = (dataSets) => {
         let foundNonZero = false;
         row.forEach(digit => {
             if (digit !== null && digit !== undefined && digit !== '') {
-                if (digit === 0 && !foundNonZero) {
+                const num = Number(digit);
+                if (num === 0 && !foundNonZero) {
                     return; // Skip leading zeros
                 }
-                if (digit !== 0) {
+                if (num !== 0) {
                     foundNonZero = true;
                 }
                 count++;
@@ -102,20 +104,35 @@ export const calculateDivisionStats = (problems) => {
     const consecutive = Array(10).fill(null).map(() => Array(10).fill(0)); // [d1][d2] マトリクス
 
     problems.forEach(p => {
-        // 割る数の連続チェック
-        for (let i = 0; i < p.divisor.length - 1; i++) {
+        // 割る数の連続チェック（頭の0をスキップ）
+        let foundNonZeroDivisor = false;
+        let lastValidDivisor = null;
+        for (let i = 0; i < p.divisor.length; i++) {
             const current = p.divisor[i];
-            const next = p.divisor[i + 1];
-            if (current !== null && next !== null) {
-                consecutive[current][next]++;
+            if (current !== null && current !== undefined && current !== '') {
+                const num = Number(current);
+                if (num === 0 && !foundNonZeroDivisor) continue;
+                foundNonZeroDivisor = true;
+                if (lastValidDivisor !== null) {
+                    consecutive[lastValidDivisor][num]++;
+                }
+                lastValidDivisor = num;
             }
         }
-        // 答えの連続チェック
-        for (let i = 0; i < p.answer.length - 1; i++) {
+        
+        // 答えの連続チェック（頭の0をスキップ）
+        let foundNonZeroAnswer = false;
+        let lastValidAnswer = null;
+        for (let i = 0; i < p.answer.length; i++) {
             const current = p.answer[i];
-            const next = p.answer[i + 1];
-            if (current !== null && next !== null) {
-                consecutive[current][next]++;
+            if (current !== null && current !== undefined && current !== '') {
+                const num = Number(current);
+                if (num === 0 && !foundNonZeroAnswer) continue;
+                foundNonZeroAnswer = true;
+                if (lastValidAnswer !== null) {
+                    consecutive[lastValidAnswer][num]++;
+                }
+                lastValidAnswer = num;
             }
         }
     });

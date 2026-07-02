@@ -14,14 +14,15 @@ const calculateFrequency = (dataSets) => {
         let foundNonZero = false;
         row.forEach(digit => {
             if (digit !== null && digit !== undefined && digit !== '') {
-                if (digit === 0 && !foundNonZero) {
+                const num = Number(digit);
+                if (num === 0 && !foundNonZero) {
                     // Skip leading zeros
                     return;
                 }
-                if (digit !== 0) {
+                if (num !== 0) {
                     foundNonZero = true;
                 }
-                counts[digit]++;
+                counts[num]++;
             }
         });
         return counts;
@@ -54,10 +55,11 @@ const calculateRowDigitCounts = (dataSets) => {
         let foundNonZero = false;
         row.forEach(digit => {
             if (digit !== null && digit !== undefined && digit !== '') {
-                if (digit === 0 && !foundNonZero) {
+                const num = Number(digit);
+                if (num === 0 && !foundNonZero) {
                     return; // Skip leading zeros
                 }
-                if (digit !== 0) {
+                if (num !== 0) {
                     foundNonZero = true;
                 }
                 count++;
@@ -109,13 +111,14 @@ export const calculateMultiplicationStats = (problems) => {
         let lastValidLeft = null;
         for (let i = 0; i < p.left.length; i++) {
             const current = p.left[i];
-            if (current !== null) {
-                if (current === 0 && !foundNonZeroLeft) continue;
+            if (current !== null && current !== undefined && current !== '') {
+                const num = Number(current);
+                if (num === 0 && !foundNonZeroLeft) continue;
                 foundNonZeroLeft = true;
                 if (lastValidLeft !== null) {
-                    consecutive[lastValidLeft][current]++;
+                    consecutive[lastValidLeft][num]++;
                 }
-                lastValidLeft = current;
+                lastValidLeft = num;
             }
         }
         
@@ -124,13 +127,14 @@ export const calculateMultiplicationStats = (problems) => {
         let lastValidRight = null;
         for (let i = 0; i < p.right.length; i++) {
             const current = p.right[i];
-            if (current !== null) {
-                if (current === 0 && !foundNonZeroRight) continue;
+            if (current !== null && current !== undefined && current !== '') {
+                const num = Number(current);
+                if (num === 0 && !foundNonZeroRight) continue;
                 foundNonZeroRight = true;
                 if (lastValidRight !== null) {
-                    consecutive[lastValidRight][current]++;
+                    consecutive[lastValidRight][num]++;
                 }
-                lastValidRight = current;
+                lastValidRight = num;
             }
         }
     });
