@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { generateDivisionProblems, regenerateDivisionRow } from '../utils/divisionGenerator';
+import { regenerateDivisionRow } from '../utils/divisionGenerator';
 import { calculateDivisionStats } from '../utils/divisionValidator';
 import { createInitialDivisionState } from '../constants/initialState';
 
@@ -50,15 +50,31 @@ export const useDivisionState = () => {
         });
     }, []);
 
-    // 10問すべてを一括でランダム生成
+    // 10問すべてを一括でランダム生成 (Web Workerを使用してバックグラウンド実行)
     const generateRandomProblems = useCallback(() => {
+        if (isGenerating) return; // 既に生成中の場合は何もしない
         setIsGenerating(true);
-        setTimeout(() => {
-            const newProblems = generateDivisionProblems();
-            setProblems(newProblems);
+        
+        const worker = new Worker(new URL('../workers/divisionWorker.js', import.meta.url), { type: 'module' });
+        
+        worker.onmessage = (e) => {
+            if (e.data.type === 'SUCCESS') {
+                setProblems(e.data.payload);
+            } else if (e.data.type === 'ERROR') {
+                console.error('Worker error:', e.data.payload);
+            }
             setIsGenerating(false);
-        }, 10);
-    }, []);
+            worker.terminate();
+        };
+
+        worker.onerror = (err) => {
+            console.error('Worker failed:', err);
+            setIsGenerating(false);
+            worker.terminate();
+        };
+
+        worker.postMessage({ type: 'GENERATE' });
+    }, [isGenerating]);
 
     // 現在の問題（problems）に基づき統計情報を計算
     const stats = useMemo(() => calculateDivisionStats(problems), [problems]);
