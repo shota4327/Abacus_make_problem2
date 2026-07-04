@@ -359,6 +359,16 @@ const _generateDivisionProblems_internal = () => {
             [rowsB[i], rowsB[j]] = [rowsB[j], rowsB[i]];
         }
 
+        let validLengths = true;
+        for (let i = 0; i < 10; i++) {
+            const sum = rowsA[i].len + rowsB[i].len;
+            if (sum < 10 || sum > 12) {
+                validLengths = false;
+                break;
+            }
+        }
+        if (!validLengths) continue;
+
         const firstDigitsSet = new Set();
         for (let i = 0; i < 10; i++) {
             const leftVal = parseInt(rowsA[i].digits.join(''), 10);
