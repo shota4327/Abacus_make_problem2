@@ -387,7 +387,7 @@ const _generateMultiplicationProblems_internal = () => {
                     for(let i = 0; i < tempZC; i++) rBStr += "0";
                     rBStr += rowsB[rIdx].digits.slice(0, tempLen).join('');
                     
-                    const decIdx = tempZC - 1;
+                    const decIdx = 0; // 常に最初のゼロの直後に小数点を打つ
                     const type = getDecimalResultType(rAStr, rBStr, decIdx);
                     if (type === 'up' || type === 'down') {
                         candidates[type].push({
@@ -500,7 +500,7 @@ const _generateMultiplicationProblems_internal = () => {
                 const startIdx = 7 - (newLen + zc);
                 for (let k = 0; k < zc; k++) p.right[startIdx + k] = 0;
                 for (let k = 0; k < newLen; k++) p.right[startIdx + zc + k] = rB.digits[k];
-                p.decimalRight = startIdx + zc - 1;
+                p.decimalRight = startIdx;
             } else {
                 for (let k = 0; k < rB.len; k++) p.right[6 - (rB.len - 1) + k] = rB.digits[k];
                 p.decimalRight = 6 - (rB.len - 1) + comboItem.pos;

@@ -406,9 +406,12 @@ const _generateDivisionProblems_internal = () => {
     const availableRowsForDecimal = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(r => !isPatternRow(r));
     shuffle(availableRowsForDecimal);
 
-    // 1未満の数になれるのは、桁数が6以下の行のみ（zc=1以上を付加しても枠からはみ出ないようにするため）
-    const possibleLessThanOneRows = availableRowsForDecimal.filter(r => rowsB[r].len <= 6);
-    if (possibleLessThanOneRows.length === 0) return null; // やり直し
+    // 先に付加する 0 の数 (zc) を 1〜3 の間で決定
+    const desiredZc = Math.floor(Math.random() * 3) + 1; // 1, 2, 3
+
+    // 1未満の数になれるのは、桁数に zc を足しても 7マス枠にはみ出ない行のみ
+    const possibleLessThanOneRows = availableRowsForDecimal.filter(r => rowsB[r].len + desiredZc <= 7);
+    if (possibleLessThanOneRows.length === 0) return null; // 条件に合う行がなければやり直し
 
     const lessThanOneRow = possibleLessThanOneRows[0];
     
@@ -430,17 +433,18 @@ const _generateDivisionProblems_internal = () => {
     {
         const rIdx = lessThanOneRow;
         const A = parseInt(rowsA[rIdx].digits.join(''), 10);
-        let B_val, B_str, decIdx, zc = 0, newLen = rowsB[rIdx].len;
+        let B_val, B_str, decIdx, zc = desiredZc, newLen = rowsB[rIdx].len;
         
-        zc = Math.floor(Math.random() * 3) + 1; // 1, 2, 3
-        while (newLen + zc > 7) zc--; // 枠に収まるように zc を制限する（newLen は削らない）
-        if (zc <= 0) return null; // 生成失敗
-        
+        // B_str は表示用。元の桁数は削らない。
         B_str = "";
         for(let i=0; i<zc; i++) B_str += "0";
         B_str += rowsB[rIdx].digits.slice(0, newLen).join('');
         decIdx = zc - 1;
-        B_val = parseFloat(B_str.slice(0, decIdx + 1) + "." + B_str.slice(decIdx + 1));
+        
+        // parseFloat に渡す文字列を正しく組み立てる（例: zc=2 なら "0.0xxxx"）
+        let prefix = "0.";
+        for(let i = 1; i < zc; i++) prefix += "0";
+        B_val = parseFloat(prefix + rowsB[rIdx].digits.slice(0, newLen).join(''));
         
         let Dividend = Math.round(A * B_val);
         let actualA = Math.round(Dividend / B_val);
@@ -576,7 +580,7 @@ const _generateDivisionProblems_internal = () => {
             const startIdx = 7 - (conf.newLen + conf.zc);
             for (let k = 0; k < conf.zc; k++) p.divisor[startIdx + k] = 0;
             for (let k = 0; k < conf.newLen; k++) p.divisor[startIdx + conf.zc + k] = rB.digits[k];
-            p.decimalDivisor = startIdx + conf.zc - 1;
+            p.decimalDivisor = startIdx;
         } else if (conf.isDecimal) {
             for (let k = 0; k < conf.newLen; k++) p.divisor[7 - conf.newLen + k] = rB.digits[k];
             p.decimalDivisor = 7 - conf.newLen + conf.decIdx;
