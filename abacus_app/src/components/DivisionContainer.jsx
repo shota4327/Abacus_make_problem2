@@ -93,7 +93,6 @@ const DivisionContainer = () => {
                             totalRowDigits={totalRowDigitsDivisor}
                             updateRowDigitCount={handleUpdateDivisor}
                             frequencyDiffs={[]}
-                            warnThreshold={2}
                             minDigit={4}
                             maxDigit={7}
                             noPanel={true}
@@ -110,7 +109,6 @@ const DivisionContainer = () => {
                             totalRowDigits={totalRowDigitsAnswer}
                             updateRowDigitCount={handleUpdateAnswer}
                             frequencyDiffs={[]}
-                            warnThreshold={2}
                             minDigit={4}
                             maxDigit={7}
                             noPanel={true}

@@ -92,7 +92,6 @@ const MultiplicationContainer = () => {
                             totalRowDigits={totalRowDigitsLeft}
                             updateRowDigitCount={handleUpdateLeft}
                             frequencyDiffs={[]}
-                            warnThreshold={2}
                             minDigit={4}
                             maxDigit={7}
                         />
@@ -106,7 +105,6 @@ const MultiplicationContainer = () => {
                             totalRowDigits={totalRowDigitsRight}
                             updateRowDigitCount={handleUpdateRight}
                             frequencyDiffs={[]}
-                            warnThreshold={2}
                             minDigit={4}
                             maxDigit={7}
                         />

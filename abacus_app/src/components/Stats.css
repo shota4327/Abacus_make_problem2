@@ -47,11 +47,14 @@ td.warn {
     /* Even lighter orange */
 }
 
+/* 警告時は奇数列も偶数列と同じピンク背景にする */
 .highlight-orange.warn,
-.highlight-orange-light.warn {
-    background-color: #fdba74 !important;
-    /* Darker orange for warning */
+.highlight-orange-light.warn,
+td.warn {
+    background-color: #fee2e2 !important;
 }
+
+
 
 .consecutive-list {
     overflow-y: auto;

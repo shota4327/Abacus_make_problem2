@@ -36,20 +36,8 @@ const MultiplicationGrid = ({ problems, updateDigit, toggleDecimal, generateRand
         const valB = calculateValue(prob.right, prob.decimalRight);
         const ans = valA * valB;
 
-        // Fix precision issues
-        // Calculate expected max decimal places based on inputs
-        const getDecimals = (n) => {
-            if (Number.isInteger(n)) return 0;
-            const str = n.toString();
-            return str.includes('.') ? str.split('.')[1].length : 0;
-        };
-        const decimalsA = getDecimals(valA);
-        const decimalsB = getDecimals(valB);
-        const maxDecimals = decimalsA + decimalsB;
-
-        // Use toFixed to strictly limit decimals to the mathematical expectation
-        // parseFloat removes trailing zeros (e.g. "1.500" -> 1.5)
-        const cleanAns = parseFloat(ans.toFixed(maxDecimals));
+        // Use Math.round to get the clean integer answer as requested
+        const cleanAns = Math.round(ans);
 
         return `${valA},${valB},${cleanAns}`;
     };
@@ -291,23 +279,9 @@ const MultiplicationGrid = ({ problems, updateDigit, toggleDecimal, generateRand
                     const valB = calculateValue(prob.right, prob.decimalRight);
                     const result = valA * valB;
 
-                    // Format result to avoid long floating point ugliness if possible, but keeping it simple for verification
-                    // If result is integer, show integer. If float, maybe limit digits?
-                    // User just said "display result". standard JS stringification is usually okay for simple calc.
-                    // But 0.1 * 0.2 = 0.02000000004. We might want to fix precision.
-                    // Let's use a simple precision fix: rounding to a reasonable number of decimals if there's a dot.
-                    // For now, simple standard output. String(result).
-                    // Actually, for abacus problems, clean decimals are preferred.
-                    // Let's rely on standard toString() and maybe trim trailing zeros if we were parsing.
-                    // result is a number.
-                    let displayResult = result;
-                    if (!Number.isInteger(result) && result.toString().length > 10) {
-                        displayResult = parseFloat(result.toPrecision(12)); // Clean up tiny errors
-                    }
-
-                    // Format result with commas for thousands separator
-                    // Use maximumFractionDigits to prevent truncation of decimals
-                    const formattedResult = displayResult.toLocaleString('en-US', { maximumFractionDigits: 10 });
+                    // Format result as a rounded integer
+                    const roundedResult = Math.round(result);
+                    const formattedResult = roundedResult.toLocaleString('en-US');
 
                     // Determine color based on fractional part
                     let invalidResultClass = '';
