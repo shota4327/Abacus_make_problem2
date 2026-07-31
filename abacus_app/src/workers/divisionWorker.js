@@ -1,19 +1,30 @@
+/**
+ * @file divisionWorker.js
+ * @description 割り算問題生成処理をメインスレッドのUI描画をブロックせず非同期でバックグラウンド実行するためのWeb Workerです。
+ */
+
 import { generateDivisionProblems } from '../utils/divisionGenerator.js';
 
-// Workerからのメッセージ受信リスナー
+/**
+ * メインスレッドからのメッセージを受信し、割り算問題の自動生成を実行します。
+ * 
+ * @param {MessageEvent} e - メインスレッドから送信されたメッセージイベント
+ * @param {Object} e.data - イベントデータ
+ * @param {string} e.data.type - リクエストタイプ ('GENERATE')
+ */
 self.onmessage = function(e) {
     if (e.data.type === 'GENERATE') {
         try {
-            // 時間のかかる処理を実行
+            // 重いバックグラウンド生成処理（割り算問題10件分）を実行
             const newProblems = generateDivisionProblems();
             
-            // 処理が完了したらメインスレッドに結果を送信
+            // 生成成功メッセージと生成結果をメインスレッドへ返信
             self.postMessage({
                 type: 'SUCCESS',
                 payload: newProblems
             });
         } catch (error) {
-            // エラーが発生した場合はメインスレッドにエラーを送信
+            // 例外発生時はエラーメッセージをメインスレッドへ送信
             self.postMessage({
                 type: 'ERROR',
                 payload: error.message || 'Unknown error occurred in divisionWorker'
@@ -21,3 +32,4 @@ self.onmessage = function(e) {
         }
     }
 };
+

@@ -1,11 +1,28 @@
+/**
+ * @file DivisionGrid.jsx
+ * @description 10問分の割り算問題（割られる数・割る数・商）の数値入力セルグリッド、小数点設定、自動生成ボタン、CSVエクスポート/インポート機能を提供する編集コンポーネントです。
+ */
+
 import React, { useState, useRef } from 'react';
 import './ProblemGrid.css';
-import './Multiplication.css'; // 乗算と同じスタイルを使用
+import './Multiplication.css';
 
+/**
+ * 割り算問題10問分の入力・編集グリッドコンポーネント
+ * 
+ * @param {Object} props - コンポーネントProps
+ * @param {Array<Object>} props.problems - 10問分の割り算問題オブジェクト配列
+ * @param {Function} props.updateDigit - セル数字更新ハンドラー (problemIndex, field, colIndex, value) => void
+ * @param {Function} props.toggleDecimal - 小数点トグルハンドラー (problemIndex, field, colIndex) => void
+ * @param {Function} props.generateRandomProblems - 一括自動生成関数
+ * @param {Function} props.replaceProblems - 問題配列置換関数 (インポート時)
+ * @returns {JSX.Element} 割り算編集グリッドUI
+ */
 const DivisionGrid = ({ problems, updateDigit, toggleDecimal, generateRandomProblems, replaceProblems }) => {
-    // activeCell: { problemIndex, field ('dividend'|'divisor'|'answer'), colIndex }
+    // アクティブ選択中セル: { problemIndex, field ('dividend'|'divisor'|'answer'), colIndex } | null
     const [activeCell, setActiveCell] = useState(null);
     const fileInputRef = useRef(null);
+
 
     const handleDigitSelect = (value, e) => {
         e.stopPropagation();

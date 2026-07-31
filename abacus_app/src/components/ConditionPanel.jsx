@@ -1,6 +1,30 @@
+/**
+ * @file ConditionPanel.jsx
+ * @description 見取り算個別編集画面のサイドパネル／設定パネルとして各種作問制約条件（桁数、口数、特定数字、位置桁指定、マイナス・補数フラグなど）の入力・切り替えを行うコンポーネントです。
+ */
+
 import React, { useState } from 'react';
 import './ConditionPanel.css';
 
+/**
+ * 単一問題の作問条件設定パネルUIコンポーネント
+ * 
+ * @param {Object} props - コンポーネントProps
+ * @param {string} [props.title="作問条件"] - パネルのタイトル
+ * @param {number} props.minDigit - 最小桁数
+ * @param {number} props.maxDigit - 最大桁数
+ * @param {Function} props.setMinDigit - 最小桁数設定関数
+ * @param {Function} props.setMaxDigit - 最大桁数設定関数
+ * @param {number} props.targetTotalDigits - 目標合計桁数
+ * @param {Function} props.setTargetTotalDigits - 目標合計桁数設定関数
+ * @param {number} props.rowCount - 行数（口数）
+ * @param {Function} props.setRowCount - 行数設定関数
+ * @param {boolean} props.hasMinus - マイナス口許可フラグ
+ * @param {Function} props.setHasMinus - マイナス口許可設定関数
+ * @param {boolean} props.complementStatus - 補数計算許可フラグ
+ * @param {Function} props.setComplementStatus - 補数計算許可設定関数
+ * @returns {JSX.Element} 条件設定パネル描画要素
+ */
 const ConditionPanel = ({
     title = "作問条件",
     minDigit, maxDigit, setMinDigit, setMaxDigit,
@@ -30,6 +54,7 @@ const ConditionPanel = ({
     isAnsMinValid,
     isAnsMaxValid
 }) => {
+
     const [activeSelector, setActiveSelector] = useState(null);
     const lengths = [5, 6, 7, 8, 9, 10, 11, 12];
     const totalOptions = [120, 130, 140];

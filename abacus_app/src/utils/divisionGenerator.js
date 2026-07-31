@@ -1,5 +1,19 @@
+/**
+ * @file divisionGenerator.js
+ * @description 割り算問題(10問分)の自動生成アルゴリズムを提供するユーティリティです。
+ * 除数・商の桁数配分（合計10〜12桁）、数字(0-9)の均等出現配分、割られる数(Dividend)の先頭桁1〜9の重複なし網羅、還元商/確信商（切り上げ2問・切り捨て2問）の四捨五入バランス生成、および1未満の小数の配置制御を行います。
+ */
+
 import { createInitialDivisionState } from '../constants/initialState.js';
 
+/**
+ * 割り算問題の1口（除数または商）を指定した桁数で再生成します。
+ * 
+ * @param {Object} currentProblem - 現在の割り算問題データ
+ * @param {'divisor'|'answer'} side - 対象項目（divisor:割る数 / answer:商・答え）
+ * @param {number|'R'} length - 桁数（'R'の場合は4〜7桁からランダム選定）
+ * @returns {Object} 更新された問題オブジェクト
+ */
 export const regenerateDivisionRow = (currentProblem, side, length) => {
     const updatedProblem = { ...currentProblem };
     let finalLength = length;
@@ -31,6 +45,12 @@ export const regenerateDivisionRow = (currentProblem, side, length) => {
     return updatedProblem;
 };
 
+/**
+ * 条件を満たす10問の割り算問題を全自動で生成します。
+ * 割られる数の先頭桁（1〜9）網羅率を高めるため最大50回の生成試行を行い、最も網羅率の高い問題セットを返します。
+ * 
+ * @returns {Array<Object>} 10問分の割り算問題オブジェクト配列
+ */
 export const generateDivisionProblems = () => {
     let attempts = 0;
     let bestProblems = null;
@@ -41,6 +61,7 @@ export const generateDivisionProblems = () => {
         const problems = _generateDivisionProblems_internal();
         if (!problems) continue;
 
+        // 割られる数(Dividend)の先頭桁(1-9)のバリエーション数を評価
         const firstDigitsSet = new Set();
         for (const p of problems) {
             let leftStr = p.answer.filter(d => d !== null).join('');
@@ -74,6 +95,7 @@ export const generateDivisionProblems = () => {
             bestProblems = problems;
         }
 
+        // 1〜9の全数字が出現した理想形であれば即座に返却
         if (firstDigitsSet.size === 9) {
             return problems;
         }
@@ -82,6 +104,17 @@ export const generateDivisionProblems = () => {
     return bestProblems || Array(10).fill(null).map(() => createInitialDivisionState());
 };
 
+/**
+ * 割り算問題自動生成の内部処理メイン関数
+ * 1. 除数(divisor)・商(answer)の桁数割り当て（4〜7桁、合計10〜12桁）
+ * 2. 0〜9の数字出現度均等割り当てプール構成
+ * 3. 連続桁・挟み桁の単一出現制御
+ * 4. 割られる数の先頭桁重複防止組み合わせ
+ * 5. 還元商・確信商（切り上げ2問、切り捨て2問）の四捨五入難易度構成および1未満の小数の組み立て
+ * 
+ * @private
+ * @returns {Array<Object>|null} 10問分の割り算問題配列
+ */
 const _generateDivisionProblems_internal = () => {
     let countsA, countsB;
     let countAttempts = 0;
@@ -204,7 +237,7 @@ const _generateDivisionProblems_internal = () => {
         return score;
     };
 
-    // 最適化ループ（パターンを0にする）
+    // 最適化ループ（重複パターンの削除）
     let currentScore = calculateTotalScoreOriginal(rowsA, rowsB);
     const startTime = Date.now();
     const DURATION = 2000;
@@ -244,7 +277,7 @@ const _generateDivisionProblems_internal = () => {
     
     if (currentScore > 0) return null;
 
-    // 後処理：意図的なスワップでパターンを1つずつ作る
+    // 後処理：特定行への連続・挟み桁の組み立て
     const applyPatternsPostProcess = (sideRows, targets, forbidden = { consecutiveDigit: null, sandwichOuter: null, sandwichInner: null }, maxLoops = 100000) => {
         const evaluateSwap = () => {
             let pScore = 0;
@@ -283,11 +316,6 @@ const _generateDivisionProblems_internal = () => {
             return pScore + transScore;
         };
 
-
-
-        // よりシンプルな総当り：
-        // ランダムにスワップを試行し、evaluateSwap() が 0 になるまでループ
-        // 目標が明確（2つの特定行に1つずつ作るだけ）なので、総当りのほうが見つけやすい。
         let pScore = evaluateSwap();
         let loop = 0;
         while(pScore > 0 && loop < maxLoops) {
@@ -305,11 +333,9 @@ const _generateDivisionProblems_internal = () => {
             sideRows[r2].digits[i2] = val1;
             
             const newScore = evaluateSwap();
-            // 山登り（同じか良くなったら採用）
             if (newScore <= pScore) {
                 pScore = newScore;
             } else {
-                // 戻す
                 sideRows[r1].digits[i1] = val1;
                 sideRows[r2].digits[i2] = val2;
             }
@@ -319,7 +345,6 @@ const _generateDivisionProblems_internal = () => {
 
     if (!applyPatternsPostProcess(rowsA, targetsA, { consecutiveDigit: null, sandwichOuter: null, sandwichInner: null }, 100000)) return null;
     
-    // A側で作られたパターン構成数字を抽出
     const extractPatternDigits = (sideRows, targets) => {
         let consecutiveDigit = null;
         let sandwichOuter = null;
@@ -342,12 +367,9 @@ const _generateDivisionProblems_internal = () => {
 
     const forbiddenB = extractPatternDigits(rowsA, targetsA);
 
-    // B側の最適化（抽出した数字を同種のパターンで使わないようにする、探索回数を30万回に増強）
     if (!applyPatternsPostProcess(rowsB, targetsB, forbiddenB, 300000)) return null;
 
-    // ============================================
-    // 割られる数の先頭数字が1〜9を網羅するペアリングを見つける
-    // ============================================
+    // 割られる数の先頭数字が1〜9を網羅するペアリング探索
     let foundValidPairing = false;
     rowsB.forEach((row, idx) => {
         row.originalIdx = idx;
@@ -393,11 +415,7 @@ const _generateDivisionProblems_internal = () => {
 
     if (!foundValidPairing) return null;
 
-    // ============================================
-    // 除算における小数の付与と割られる数(Dividend)の計算
-    // ============================================
-    
-    // パターンが設定された行（連続文字、囲み文字）は1未満の数などの対象から外す
+    // 除算における小数の付与、四捨五入タイプ判定、および被除数(Dividend)の逆算構築
     const isPatternRow = (rIdx) => {
         const originalIdx = rowsB[rIdx].originalIdx;
         return (originalIdx === targetsB.consecutive || originalIdx === targetsB.sandwich);
@@ -406,16 +424,14 @@ const _generateDivisionProblems_internal = () => {
     const availableRowsForDecimal = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(r => !isPatternRow(r));
     shuffle(availableRowsForDecimal);
 
-    // 先に付加する 0 の数 (zc) を 1〜3 の間で決定
+    // 1未満の小数行（0.xxx）用ゼロ個数決定
     const desiredZc = Math.floor(Math.random() * 3) + 1; // 1, 2, 3
 
-    // 1未満の数になれるのは、桁数に zc を足しても 7マス枠にはみ出ない行のみ
     const possibleLessThanOneRows = availableRowsForDecimal.filter(r => rowsB[r].len + desiredZc <= 7);
-    if (possibleLessThanOneRows.length === 0) return null; // 条件に合う行がなければやり直し
+    if (possibleLessThanOneRows.length === 0) return null;
 
     const lessThanOneRow = possibleLessThanOneRows[0];
     
-    // 他の小数行
     const remainingDecimalRows = availableRowsForDecimal.filter(r => r !== lessThanOneRow);
     if (remainingDecimalRows.length < 3) return null;
 
@@ -429,19 +445,17 @@ const _generateDivisionProblems_internal = () => {
 
     const rowConfigs = Array(10).fill(null);
 
-    // まず1未満の数について自然な Dividend を決定し、四捨五入タイプを確定させる
+    // 1. 1未満の小数行の Dividend 逆算と四捨五入タイプ確定
     {
         const rIdx = lessThanOneRow;
         const A = parseInt(rowsA[rIdx].digits.join(''), 10);
         let B_val, B_str, decIdx, zc = desiredZc, newLen = rowsB[rIdx].len;
         
-        // B_str は表示用。元の桁数は削らない。
         B_str = "";
         for(let i=0; i<zc; i++) B_str += "0";
         B_str += rowsB[rIdx].digits.slice(0, newLen).join('');
         decIdx = zc - 1;
         
-        // parseFloat に渡す文字列を正しく組み立てる（例: zc=2 なら "0.0xxxx"）
         let prefix = "0.";
         for(let i = 1; i < zc; i++) prefix += "0";
         B_val = parseFloat(prefix + rowsB[rIdx].digits.slice(0, newLen).join(''));
@@ -460,7 +474,7 @@ const _generateDivisionProblems_internal = () => {
         const quotient = Dividend / B_val;
         let type = 'int';
         if (Math.abs(quotient - A) > 1e-9) {
-            const decPart = (quotient % 1 + 1) % 1; // JSの負の余り対策
+            const decPart = (quotient % 1 + 1) % 1;
             if (decPart >= 0.5) type = 'up';
             else if (decPart > 1e-9) type = 'down';
         }
@@ -471,11 +485,7 @@ const _generateDivisionProblems_internal = () => {
         rowConfigs[rIdx] = { isDecimal: true, isLessThanOne: true, B_str, decIdx, zc, newLen, B_val, Dividend, type };
     }
 
-    // 残りの小数行3つについて、まだ足りないup/downがあれば意図的にDividendをずらして作る。
-    // 小数であれば B_val > 1 なので、整数 Dividend を1ずらすと商が 1/B_val (1未満) ずれるため
-    // うまく狙った範囲に入らない可能性がある。
-    // だが、B_val は必ず 1 以上 (例: 1.234) であり、4桁〜7桁の数字を小数点1〜6個ずらしたもの。
-    // 試行錯誤で Dividend を探す。
+    // 2. 通常小数行の Dividend 調整と切り上げ/切り捨て配分
     for (const rIdx of normalDecimalRows) {
         const A = parseInt(rowsA[rIdx].digits.join(''), 10);
         const B_str = rowsB[rIdx].digits.join('');
@@ -491,11 +501,10 @@ const _generateDivisionProblems_internal = () => {
         let actualA = Math.round(Dividend / B_val);
         
         if (neededType === 'up') {
-            // 切り上げになるまで増やす
             let safety = 0;
             while(safety < 100) {
                 actualA = Math.round(Dividend / B_val);
-                if (actualA !== A) { Dividend -= 1; break; } // Aを超えたら戻る
+                if (actualA !== A) { Dividend -= 1; break; }
                 const q = Dividend / B_val;
                 const decPart = (q % 1 + 1) % 1;
                 if (decPart >= 0.5) { type = 'up'; break; }
@@ -515,9 +524,8 @@ const _generateDivisionProblems_internal = () => {
             }
         }
 
-        // 最終確認
         actualA = Math.round(Dividend / B_val);
-        if (actualA !== A) return null; // どうしてもうまくいかなかったら破棄
+        if (actualA !== A) return null;
         
         const q = Dividend / B_val;
         const decPart = (q % 1 + 1) % 1;
@@ -536,7 +544,7 @@ const _generateDivisionProblems_internal = () => {
 
     if (upCount > 2 || downCount > 2) return null;
 
-    // 残りの整数行 (6問) で目標を埋める
+    // 3. 整数行（あまりあり/なし）の構築と全体の還元商/確信商難易度バランスを揃える
     const neededUp = 2 - upCount;
     const neededDown = 2 - downCount;
     let assignIdx = 0;
@@ -566,16 +574,17 @@ const _generateDivisionProblems_internal = () => {
         rowConfigs[rIdx] = { isDecimal: false, isLessThanOne: false, B_str, decIdx: null, zc: 0, newLen: rowsB[rIdx].len, B_val, Dividend, type };
     }
 
+    // 10問分のデータ構造に整形
     for (let i = 0; i < 10; i++) {
         const p = createInitialDivisionState();
         const rA = rowsA[i]; // Answer
         const rB = rowsB[i]; // Divisor
         const conf = rowConfigs[i];
 
-        // Answer
+        // 商 (Answer)
         for (let k = 0; k < rA.len; k++) p.answer[7 - rA.len + k] = rA.digits[k];
 
-        // Divisor
+        // 割る数 (Divisor)
         if (conf.isLessThanOne) {
             const startIdx = 7 - (conf.newLen + conf.zc);
             for (let k = 0; k < conf.zc; k++) p.divisor[startIdx + k] = 0;
@@ -588,7 +597,7 @@ const _generateDivisionProblems_internal = () => {
             for (let k = 0; k < conf.newLen; k++) p.divisor[7 - conf.newLen + k] = rB.digits[k];
         }
 
-        // Dividend
+        // 被除数 (Dividend: 割られる数) 12桁右詰め配置
         const divStr = conf.Dividend.toString();
         const divLen = divStr.length;
         const divOffset = 12 - divLen;
@@ -597,7 +606,7 @@ const _generateDivisionProblems_internal = () => {
                 p.dividend[divOffset + j] = parseInt(divStr[j], 10);
             }
         }
-        // Save roundType for UI highlighting
+        // UI強調（還元商/確信商）用の属性
         p.roundType = conf.type;
         
         finalProblems.push(p);
@@ -605,3 +614,4 @@ const _generateDivisionProblems_internal = () => {
     
     return finalProblems;
 };
+

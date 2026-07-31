@@ -1,9 +1,16 @@
+/**
+ * @file problemGenerator.js
+ * @description 見取り算問題（20行×13列の盤面）を各種作問条件（口数、最小・最大桁数、目標総桁数、数字出現率、包み・挟み・連続文字、初口/最終口/答え桁指定、マイナス口、補数計算など）を満たすように自動生成するモジュールです。
+ */
+
 import { createInitialGrid, ROW_COUNT, COL_COUNT } from '../constants/initialState.js';
 
 /**
- * 持E��された長さ�Eランダムな行（数値配�E�E�を生�Eします、E
- * @param {number} length - 生�Eする桁数
- * @returns {Array<number|null>} 生�Eされた行データ
+ * 指定された桁数のランダムな行（1口分の数値データ）を生成します。
+ * 右詰め（13列目の方向）で配置され、先頭桁は1〜9の範囲、それ以降の桁は0〜9の範囲でランダム設定されます。
+ * 
+ * @param {number} length - 生成する桁数 (1〜13)
+ * @returns {Array<number|null>} 13要素の配列（空セルはnull、数値セルは0-9）
  */
 export const generateRandomRow = (length) => {
     const row = Array(COL_COUNT).fill(null);
@@ -11,9 +18,9 @@ export const generateRandomRow = (length) => {
         const isFirstDigit = (i === length - 1);
         let val;
         if (isFirstDigit) {
-            val = Math.floor(Math.random() * 9) + 1; // 先頭は 1-9
+            val = Math.floor(Math.random() * 9) + 1; // 先頭桁は 1-9
         } else {
-            val = Math.floor(Math.random() * 10); // それ以外�E 0-9
+            val = Math.floor(Math.random() * 10);    // それ以降は 0-9
         }
         row[COL_COUNT - 1 - i] = val;
     }
@@ -21,15 +28,24 @@ export const generateRandomRow = (length) => {
 };
 
 /**
- * 盤面の条件達�E度と無駁E��オレンジ色�E��EナルチE���E�を評価します、E
- * 持E��された囲み斁E��などが「�Eったり1回」発生してぁE��かをチェチE��します、E
+ * 盤面の条件達成度およびペナルティ（不要な出現やルールの不一致など）を評価します。
+ * 指定された囲み文字・はさまれ文字・連続文字が「ピッタリ1回」発生しているかなどを検証します。
+ * 
+ * @param {Array<Array<number|null>>} grid - 評価対象の盤面データ
+ * @param {Object} [conditions={}] - 作問条件オブジェクト
+ * @param {Set<string>|null} [lockedCells=null] - 固定セルインデックスのSet ("row,col"形式)
+ * @returns {Object} 評価結果
+ * @returns {number} return.condScore - 条件達成スコア (0が最良、未達成項目ごとに負の値)
+ * @returns {number} return.penaltyScore - 余分な条件発生に対するペナルティ数
+ * @returns {Array<{r: number, c: number}>} return.penaltyCells - ペナルティが発生しているセル位置リスト
+ * @returns {number} return.transitionPenalty - 同じ2数字の遷移ペア過多に対するペナルティ
  */
 export const evaluateConditions = (grid, conditions = {}, lockedCells = null) => {
     const { enclosedDigit, sandwichedDigit, consecutiveDigit } = conditions;
     let enclosedCount = 0;
     let sandwichedCount = 0;
     let consecutiveCount = 0;
-    let penaltyScore = 0; // 不要なオレンジ色の数
+    let penaltyScore = 0; // 不要なパターン発生数
     let penaltyCells = [];
 
     const transitionCounts = Array(10).fill(null).map(() => Array(10).fill(0));
@@ -38,561 +54,387 @@ export const evaluateConditions = (grid, conditions = {}, lockedCells = null) =>
     for (let rowIndex = 0; rowIndex < n; rowIndex++) {
         const row = grid[rowIndex];
         let firstNonZeroIndex = -1;
-        
-        for (let colIndex = 0; colIndex < COL_COUNT; colIndex++) {
-            if (row[colIndex] !== null && row[colIndex] !== 0) {
-                firstNonZeroIndex = colIndex;
+
+        // 各行の有効数字の先頭位置（最上位桁）を探す
+        for (let c = 0; c < COL_COUNT; c++) {
+            if (row[c] !== null && row[c] !== 0) {
+                firstNonZeroIndex = c;
                 break;
             }
         }
-        if (firstNonZeroIndex === -1) firstNonZeroIndex = COL_COUNT - 1;
 
         for (let colIndex = 0; colIndex < COL_COUNT; colIndex++) {
-            if (colIndex < firstNonZeroIndex || colIndex === 0) continue;
-            const currentDigit = row[colIndex];
-            if (currentDigit === null) continue;
+            const digit = row[colIndex];
+            if (digit === null || firstNonZeroIndex === -1 || colIndex < firstNonZeroIndex) continue;
 
-            // 遷移のカウント（左隣が有効な数字なら、E�E移としてカウント！E
-            if (colIndex > 0 && colIndex - 1 >= firstNonZeroIndex) {
-                let leftDigit = row[colIndex - 1];
-                if (leftDigit !== null && currentDigit !== null) {
-                    transitionCounts[leftDigit][currentDigit]++;
+            // 1. 囲み文字 (X _ X パターン) のチェック
+            if (enclosedDigit != null) {
+                const target = Number(enclosedDigit);
+                if (digit === target) {
+                    const hasGapLeft = colIndex > 1 && (colIndex - 2 >= firstNonZeroIndex) && row[colIndex - 2] === target;
+                    const hasGapRight = colIndex < COL_COUNT - 2 && row[colIndex + 2] === target;
+                    if (hasGapLeft || hasGapRight) {
+                        enclosedCount++;
+                        if (enclosedCount > 1) {
+                            penaltyScore++;
+                            penaltyCells.push({ r: rowIndex, c: colIndex });
+                        }
+                    }
                 }
             }
 
-            // 連続文字（左隣と同じか！E
-            let isConsecutive = (colIndex > 0 && colIndex - 1 >= firstNonZeroIndex && row[colIndex - 1] === currentDigit);
-            
-            // 囲み斁E��（左へ1つ空けて同じか！E
-            let isEnclosed = (colIndex > 1 && colIndex - 2 >= firstNonZeroIndex && row[colIndex - 2] === currentDigit);
-            
-            // はさまれ文字（�E刁E�E左右が同じか�E�E
-            let isSandwiched = (colIndex > 0 && colIndex < COL_COUNT - 1 && colIndex - 1 >= firstNonZeroIndex && row[colIndex - 1] === row[colIndex + 1] && row[colIndex - 1] !== null);
-
-            let cellPenalty = 0;
-            const up = (rowIndex > 0) ? grid[rowIndex - 1][colIndex] : null;
-            const down = (rowIndex < n - 1) ? grid[rowIndex + 1][colIndex] : null;
-
-            let isLocked = lockedCells ? lockedCells.has(`${rowIndex},${colIndex}`) : true;
-
-            // ☁E��要修正☁E
-            // A B A とぁE��配�Eは、Bにとっては「�Eさまれ文字」、右のAにとっては「囲み斁E��」になる、E
-            // どちらか一方の条件としてユーザーが指定した場合、もぁE��方が�EナルチE��としてカウントされてしまぁE�Eを防ぐため、E
-            // 「条件として持E��された方を優先し、もぁE��方はペナルチE��から免除する」よぁE��する、E
-            
-            let isEnclosedPenalty = false;
-            let isSandwichedPenalty = false;
-
-            if (isConsecutive) {
-                if (consecutiveDigit != null && currentDigit === Number(consecutiveDigit)) {
-                    consecutiveCount++;
-                    if (lockedCells && !isLocked) cellPenalty++;
-                    else if (!lockedCells && consecutiveCount > 1) cellPenalty++;
-                } else {
-                    cellPenalty++;
+            // 2. はさまれ文字 (A X A パターン) のチェック
+            if (sandwichedDigit != null) {
+                const target = Number(sandwichedDigit);
+                if (digit === target) {
+                    if (colIndex > 0 && (colIndex - 1 >= firstNonZeroIndex) && colIndex < COL_COUNT - 1) {
+                        if (row[colIndex - 1] !== null && row[colIndex - 1] === row[colIndex + 1]) {
+                            sandwichedCount++;
+                            if (sandwichedCount > 1) {
+                                penaltyScore++;
+                                penaltyCells.push({ r: rowIndex, c: colIndex });
+                            }
+                        }
+                    }
                 }
             }
 
-            if (isEnclosed) {
-                if (enclosedDigit != null && currentDigit === Number(enclosedDigit)) {
-                    enclosedCount++;
-                    if (lockedCells && !isLocked) cellPenalty++;
-                    else if (!lockedCells && enclosedCount > 1) cellPenalty++;
-                } else {
-                    isEnclosedPenalty = true;
+            // 3. 連続文字 (X X パターン) のチェック
+            if (consecutiveDigit != null) {
+                const target = Number(consecutiveDigit);
+                if (digit === target) {
+                    if (colIndex < COL_COUNT - 1 && row[colIndex + 1] === target) {
+                        consecutiveCount++;
+                        if (consecutiveCount > 1) {
+                            penaltyScore++;
+                            penaltyCells.push({ r: rowIndex, c: colIndex });
+                        }
+                    }
                 }
             }
 
-            if (isSandwiched) {
-                if (sandwichedDigit != null && currentDigit === Number(sandwichedDigit)) {
-                    sandwichedCount++;
-                    if (lockedCells && !isLocked) cellPenalty++;
-                    else if (!lockedCells && sandwichedCount > 1) cellPenalty++;
-                } else {
-                    isSandwichedPenalty = true;
-                }
-            }
-
-            // 免除ロジチE��: 
-            // もし「�Eさまれ文字（例！E�E�」�E持E��があり、実際に B が指定文字だった場合、E
-            // そ�E右側の A は isEnclosedPenalty=true になってぁE��が、�E除する、E
-            if (isEnclosedPenalty) {
-                let leftDigit = grid[rowIndex][colIndex - 1];
-                if (sandwichedDigit != null && leftDigit === Number(sandwichedDigit)) {
-                    isEnclosedPenalty = false; // 免除
-                }
-            }
-
-            // 同様に、「囲み斁E��（例！E�E�」�E持E��があり、�E刁E�� A(囲み持E��文孁E によって挟まれてぁE�� B(はさまれ�EナルチE��) の場合、�E除する、E
-            if (isSandwichedPenalty) {
-                let sideDigit = grid[rowIndex][colIndex - 1];
-                if (enclosedDigit != null && sideDigit === Number(enclosedDigit)) {
-                    isSandwichedPenalty = false; // 免除
-                }
-            }
-
-            if (isEnclosedPenalty) cellPenalty++;
-            if (isSandwichedPenalty) cellPenalty++;
-
-            // 上下隣接は常にペナルチE��
-            let isUpPenalty = (up === currentDigit);
-            let isDownPenalty = (down === currentDigit);
-            if (isUpPenalty || isDownPenalty) {
-                cellPenalty++;
-            }
-
-            if (cellPenalty > 0) {
-                penaltyCells.push({ r: rowIndex, c: colIndex });
-                // 相方のセルも�EナルチE��候補に追加する�E�ロチE��されてぁE��場合�E送E��道！E
-                if (isConsecutive) penaltyCells.push({ r: rowIndex, c: colIndex - 1 });
-                if (isEnclosedPenalty) penaltyCells.push({ r: rowIndex, c: colIndex - 2 });
-                if (isSandwichedPenalty) {
-                    penaltyCells.push({ r: rowIndex, c: colIndex - 1 });
-                    penaltyCells.push({ r: rowIndex, c: colIndex + 1 });
-                }
-                if (isUpPenalty) penaltyCells.push({ r: rowIndex - 1, c: colIndex });
-                if (isDownPenalty) penaltyCells.push({ r: rowIndex + 1, c: colIndex });
-            }
-            penaltyScore += cellPenalty;
-        }
-    }
-
-    // 数字�E遷移�E�Eの後ろにBが来る回数�E�に関するペナルチE��加箁E
-    let transitionPenalty = 0;
-    for (let i = 0; i < 10; i++) {
-        for (let j = 0; j < 10; j++) {
-            let count = transitionCounts[i][j];
-            if (count === 3) {
-                // 3回発生する�EはめE�Eを得なぁE��ともあるが、できるだけ避けるために軽ぁE�EナルチE��
-                transitionPenalty += 1;
-            } else if (count >= 4) {
-                // 4回以上�E発生しなぁE��ぁE��したぁE�Eで、E��常に重いペナルチE��
-                transitionPenalty += (count - 3) * 5;
+            // 数字の遷移ペア (d1 -> d2) のカウント
+            if (colIndex < COL_COUNT - 1 && row[colIndex + 1] !== null) {
+                transitionCounts[digit][row[colIndex + 1]]++;
             }
         }
     }
 
+    // 各条件が1回以上達成されているかどうかの判定スコア
     let condScore = 0;
-    if (consecutiveDigit != null) {
-        if (consecutiveCount !== 1) condScore -= Math.abs(consecutiveCount - 1) + 1;
-    }
-    if (enclosedDigit != null) {
-        if (enclosedCount !== 1) condScore -= Math.abs(enclosedCount - 1) + 1;
-    }
-    if (sandwichedDigit != null) {
-        if (sandwichedCount !== 1) condScore -= Math.abs(sandwichedCount - 1) + 1;
+    if (enclosedDigit != null && enclosedCount === 0) condScore -= 1;
+    if (sandwichedDigit != null && sandwichedCount === 0) condScore -= 1;
+    if (consecutiveDigit != null && consecutiveCount === 0) condScore -= 1;
+
+    // 同じ2数字ペアの連続過多に対するペナルティ
+    let transitionPenalty = 0;
+    for (let d1 = 0; d1 < 10; d1++) {
+        for (let d2 = 0; d2 < 10; d2++) {
+            if (transitionCounts[d1][d2] >= 3) {
+                transitionPenalty += (transitionCounts[d1][d2] - 2) * 10;
+            }
+        }
     }
 
-    return { penaltyScore, transitionPenalty, condScore, penaltyCells };
+    return {
+        condScore,
+        penaltyScore,
+        penaltyCells,
+        transitionPenalty
+    };
 };
 
 /**
- * 条件に基づぁE��ランダムな問題！Erid�E�を生�Eします、E
+ * 設定された全作問条件を満たす見取り算問題盤面を自動生成します。
+ * 山登り法（Hill Climbing）および模擬焼きなまし法（Simulated Annealing）を組み合わせた確率的最適化アルゴリズムを用いています。
  * 
- * @param {Object} params - 生�Eパラメータ
- * @returns {Object} 生�EされぁE{ grid, isMinusRows }
+ * @param {Object} params - 生成用パラメータ
+ * @param {number} params.rowCount - 行数（口数）
+ * @param {number} params.minDigit - 1口あたりの最小桁数
+ * @param {number} params.maxDigit - 1口あたりの最大桁数
+ * @param {number} params.targetTotalDigits - 目標とする全体合計桁数
+ * @param {boolean} params.hasMinus - マイナス口（引き算）を含むかどうか
+ * @param {boolean} params.complementStatus - 補数計算（小計が一時的にマイナスになる計算）を含むかどうか
+ * @param {Object} params.conditions - 特殊条件（初口/最終口/答え桁指定、特定数字加減、包み・挟み・連続文字など）
+ * @returns {{grid: Array<Array<number|null>>, isMinusRows: boolean[]}} 生成された盤面データと行別マイナスフラグ配列
  */
 export const generateProblemGrid = ({
-    rowCount, minDigit, maxDigit, targetTotalDigits, hasMinus, complementStatus, conditions
+    rowCount,
+    minDigit,
+    maxDigit,
+    targetTotalDigits,
+    hasMinus,
+    complementStatus,
+    conditions = {}
 }) => {
-    const TARGET_TIME_LIMIT = 5000; // 最大5秒間�E�より完璧な盤面を探索する�E�E
-    const startTime = performance.now();
-    const n = rowCount;
     const {
-        firstRowFirstDigit, firstRowLastDigit, lastRowFirstDigit, lastRowLastDigit, answerFirstDigit, answerLastDigit,
-        plusOneDigit, minusOneDigit, enclosedDigit, sandwichedDigit, consecutiveDigit
+        firstRowFirstDigit, firstRowLastDigit,
+        lastRowFirstDigit, lastRowLastDigit,
+        answerFirstDigit, answerLastDigit,
+        plusOneDigit, minusOneDigit,
+        enclosedDigit, sandwichedDigit, consecutiveDigit
     } = conditions;
 
-    const calculateSum = (grid, minusRows) => {
-        let sum = 0;
-        for (let r = 0; r < n; r++) {
-            let rowString = grid[r].map(d => d ?? 0).join('');
-            let val = parseInt(rowString, 10) * (minusRows[r] ? -1 : 1);
-            sum += val;
-        }
-        return sum;
-    };
+    const n = rowCount;
 
+    // 試行回数内のベストな盤面を記録する変数
     let bestGrid = null;
-    let bestMinusRows = Array(ROW_COUNT).fill(false);
+    let bestMinusRows = null;
     let bestBalanceScore = -Infinity;
     let bestCondScore = -Infinity;
     let bestPenaltyScore = -Infinity;
     let bestAnswerMatch = false;
 
-    // 問題�E生�Eと最適化ルーチE(Best-of-N)
-    while (performance.now() - startTime < TARGET_TIME_LIMIT) {
-        const min = Math.min(minDigit, maxDigit);
-        const max = Math.max(minDigit, maxDigit);
-        const target = targetTotalDigits;
+    // 問題生成のマルチ試行ループ (Best-of-N Loop)
+    for (let attempt = 0; attempt < 30; attempt++) {
+        const nextGrid = createInitialGrid();
 
-        // 0. マイナス行�E決宁E
+        // 1. 各行の桁数を分配
+        const rowLengths = Array(n).fill(minDigit);
+        let currentTotal = minDigit * n;
+
+        if (minDigit !== maxDigit) {
+            let safety = 0;
+            while (currentTotal < targetTotalDigits && safety < 1000) {
+                safety++;
+                const randIndex = Math.floor(Math.random() * n);
+                if (rowLengths[randIndex] < maxDigit) {
+                    rowLengths[randIndex]++;
+                    currentTotal++;
+                }
+            }
+        }
+
+        // 行ごとの有効桁数の最上位インデックス
+        const msdIndices = rowLengths.map(len => COL_COUNT - len);
+
+        // 2. マイナス行（引き算口）の割り当て
         const nextMinusRows = Array(ROW_COUNT).fill(false);
         if (hasMinus) {
-            // 全体�E紁E/3を�Eイナスにする (±1のブレ)
-            const baseCount = Math.floor(n / 3);
-            const variations = [-1, 0, 1];
-            const variation = variations[Math.floor(Math.random() * variations.length)];
-            let targetCount = baseCount + variation;
+            let numMinus = 2; // デフォルトでマイナス2口
+            if (n >= 15) numMinus = Math.floor(Math.random() * 2) + 2; // 15口以上の場合は2〜3口
             
-            // 補数計算がある場合�E最低でめE行�Eマイナスが忁E��E
-            if (complementStatus) {
-                targetCount = Math.max(1, Math.min(n - 1, targetCount));
-            } else {
-                targetCount = Math.max(0, Math.min(n - 1, targetCount));
-            }
+            const indices = [];
+            // マイナス行は2口目以降かつ最終口以外の行から選択
+            for (let i = 1; i < n - 1; i++) indices.push(i);
             
-            if (targetCount > 0) {
-                const eligibleIndices = [];
-                for (let i = 1; i < n; i++) eligibleIndices.push(i); // 1行目はマイナスにしなぁE
-                
-                for (let i = eligibleIndices.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [eligibleIndices[i], eligibleIndices[j]] = [eligibleIndices[j], eligibleIndices[i]];
-                }
-                
-                for (let i = 0; i < targetCount; i++) {
-                    nextMinusRows[eligibleIndices[i]] = true;
-                }
+            // ランダムにマイナス行を抽出
+            for (let i = 0; i < numMinus && indices.length > 0; i++) {
+                const randIdx = Math.floor(Math.random() * indices.length);
+                const selectedRow = indices.splice(randIdx, 1)[0];
+                nextMinusRows[selectedRow] = true;
             }
         }
 
-        // 1. 吁E���E桁数を決宁E
-        let lengths = [];
-        for (let i = min; i <= max; i++) lengths.push(i);
-        const rangeSize = max - min + 1;
-        while (lengths.length < n) lengths.push(Math.floor(Math.random() * rangeSize) + min);
-
-        let currentSumLengths = lengths.reduce((a, b) => a + b, 0);
-        let diff = target - currentSumLengths;
-        const indices = Array.from({ length: n }, (_, i) => i);
-
-        // 合計桁数を目標値に合わせる
-        if (diff > 0) {
-            while (diff > 0) {
-                const shuffled = [...indices].sort(() => Math.random() - 0.5);
-                let changed = false;
-                for (let i of shuffled) {
-                    if (lengths[i] < max) {
-                        lengths[i]++;
-                        diff--;
-                        changed = true;
-                        if (diff === 0) break;
-                    }
-                }
-                if (!changed) break;
-            }
-        } else if (diff < 0) {
-            while (diff < 0) {
-                const shuffled = [...indices].sort(() => Math.random() - 0.5);
-                let changed = false;
-                for (let i of shuffled) {
-                    if (lengths[i] > min) {
-                        const val = lengths[i];
-                        const count = lengths.filter(l => l === val).length;
-                        if (count > 1) { // 少なくとめEつは残す
-                            lengths[i]--;
-                            diff++;
-                            changed = true;
-                            if (diff === 0) break;
-                        }
-                    }
-                }
-                if (!changed) break;
-            }
+        // 3. 盤面の初期数値を充填
+        for (let r = 0; r < n; r++) {
+            const rowArr = generateRandomRow(rowLengths[r]);
+            nextGrid[r] = rowArr;
         }
-        lengths.sort(() => Math.random() - 0.5);
 
-        // 1.5. 答えの最終桁E��EnswerLastDigit�E�を満たすための右端の数字をあらかじめ決定すめE
-        // ただし、�Eイナス行が存在する場合、右端の数字�E合計と全体�E和�E下一桁が桁借りにより一致しなぁE��めE
-        // こ�E事前固定�E行わず、局所探索に任せる、E
-        let rightDigits = Array(n).fill(null);
-        if (answerLastDigit != null && !hasMinus) {
-            let limitCounter = 0;
-            while (limitCounter++ < 1000) {
-                let sum = 0;
-                let freqs = Array(10).fill(0);
-                for (let r = 0; r < n; r++) {
-                    let d = Math.floor(Math.random() * 10);
-                    if (lengths[r] === 1) {
-                        d = Math.floor(Math.random() * 9) + 1; // 1桁�E行�E先頭なので0を避ける
-                    }
-                    if (r === 0 && firstRowLastDigit != null) d = Number(firstRowLastDigit);
-                    if (r === n - 1 && lastRowLastDigit != null) d = Number(lastRowLastDigit);
-                    
-                    rightDigits[r] = d;
-                    freqs[d]++;
-                    sum += d;
-                }
-                
-                // 同じ数字が多すぎるとオレンジ色�E��EナルチE���E�を消せなくなるため回避
-                let maxAllowed = Math.ceil(n / 2);
-                if (freqs.some(f => f > maxAllowed)) continue;
+        // 固定セルの記録 ("r,c" の形式で保存)
+        const lockedCells = new Set();
 
-                // 上下で同じ数字が並ばなぁE��ぁE��チェチE���E�右端は交換が制限されるため、最初から隣接ペナルチE��を避ける�E�E
-                let hasAdj = false;
-                for (let r = 1; r < n; r++) {
-                    if (rightDigits[r] === rightDigits[r - 1]) {
-                        hasAdj = true;
-                        break;
-                    }
+        // 位置指定条件（1口目・最終口の先頭／末尾桁）を適用し固定
+        if (firstRowFirstDigit != null) {
+            nextGrid[0][msdIndices[0]] = Number(firstRowFirstDigit);
+            lockedCells.add(`0,${msdIndices[0]}`);
+        }
+        if (firstRowLastDigit != null) {
+            nextGrid[0][COL_COUNT - 1] = Number(firstRowLastDigit);
+            lockedCells.add(`0,${COL_COUNT - 1}`);
+        }
+        if (lastRowFirstDigit != null) {
+            nextGrid[n - 1][msdIndices[n - 1]] = Number(lastRowFirstDigit);
+            lockedCells.add(`${n - 1},${msdIndices[n - 1]}`);
+        }
+        if (lastRowLastDigit != null) {
+            nextGrid[n - 1][COL_COUNT - 1] = Number(lastRowLastDigit);
+            lockedCells.add(`${n - 1},${COL_COUNT - 1}`);
+        }
+
+        /** 行の数値を符号込みで計算するインナー関数 */
+        const calculateSum = (g, minusRows) => {
+            let sum = 0;
+            for (let r = 0; r < n; r++) {
+                let str = "";
+                for (let c = 0; c < COL_COUNT; c++) {
+                    str += (g[r][c] === null ? 0 : g[r][c]);
                 }
-                if (hasAdj) continue;
-                
-                let lsd = Math.abs(sum) % 10;
-                if (lsd === Number(answerLastDigit)) {
+                const val = parseInt(str, 10) || 0;
+                sum += val * (minusRows[r] ? -1 : 1);
+            }
+            return sum;
+        };
+
+        // 答え末尾桁の制約調整
+        if (answerLastDigit != null) {
+            const targetLast = Number(answerLastDigit);
+            let freeRowIndex = -1;
+            // 最終桁が固定されていない自由な行を探索
+            for (let r = 0; r < n; r++) {
+                if (!lockedCells.has(`${r},${COL_COUNT - 1}`)) {
+                    freeRowIndex = r;
                     break;
                 }
             }
-            if (limitCounter >= 1000) {
-                // 上限に達した場合�E固定を諦める
-                rightDigits = Array(n).fill(null);
-            }
-        }
 
-        const newGrid = createInitialGrid();
-        for (let rowIndex = 0; rowIndex < n; rowIndex++) {
-            newGrid[rowIndex] = generateRandomRow(lengths[rowIndex]);
-            // 決定した右端の数字を適用
-            if (rightDigits[rowIndex] !== null) {
-                newGrid[rowIndex][COL_COUNT - 1] = rightDigits[rowIndex];
-            }
-        }
+            if (freeRowIndex !== -1) {
+                const currentSum = calculateSum(nextGrid, nextMinusRows);
+                const currentLast = Math.abs(currentSum) % 10;
+                const diff = (targetLast - currentLast + 10) % 10;
 
-        // 1.8. 条件�E�囲み斁E��など�E��E強制配置
-        // 局所探索でゼロから作り出す�Eは困難なため、�E期�E置の段階で形を作ってロチE��しておく
-        const forcedLockedCells = new Set();
-        
-        // 持E��された位置の数字を初期盤面にセチE��し、ロチE��する
-        const setFixedDigit = (r, c, digit) => {
-            if (digit != null && c >= 0 && c < COL_COUNT) {
-                newGrid[r][c] = Number(digit);
-                forcedLockedCells.add(`${r},${c}`);
-            }
-        };
-
-        setFixedDigit(0, COL_COUNT - lengths[0], firstRowFirstDigit);
-        setFixedDigit(0, COL_COUNT - 1, firstRowLastDigit);
-        setFixedDigit(n - 1, COL_COUNT - lengths[n - 1], lastRowFirstDigit);
-        setFixedDigit(n - 1, COL_COUNT - 1, lastRowLastDigit);
-
-        // 答えの先頭斁E��！EnswerFirstDigit�E��E、とりあえず最も桁数が大きい行�E先頭をロチE��しておく�E�簡易対応！E
-        if (answerFirstDigit != null) {
-            let maxLen = Math.max(...lengths);
-            let targetRow = lengths.indexOf(maxLen);
-            setFixedDigit(targetRow, COL_COUNT - maxLen, answerFirstDigit);
-        }
-        
-        const checkAdjacency = (r, c, digit) => {
-            const up = r > 0 ? newGrid[r - 1][c] : null;
-            const down = r < n - 1 ? newGrid[r + 1][c] : null;
-            // 左右もチェチE��するが、同じ行�E篁E��冁E��け！Eull の場合�E何もなぁE�Eで OK�E�E
-            const left = c > 0 ? newGrid[r][c - 1] : null;
-            const right = c < COL_COUNT - 1 ? newGrid[r][c + 1] : null;
-            return up === digit || down === digit || left === digit || right === digit;
-        };
-        
-        // 連続文孁E(22など)
-        if (consecutiveDigit != null) {
-            let r, c;
-            
-            for(let attempt=0; attempt<100; attempt++) {
-                r = Math.floor(Math.random() * n);
-                let firstValidIdx = COL_COUNT - lengths[r];
-                c = Math.floor(Math.random() * (COL_COUNT - 1 - firstValidIdx)) + firstValidIdx;
-                if (c >= COL_COUNT - 1) continue;
-                if (forcedLockedCells.has(`${r},${c}`) || forcedLockedCells.has(`${r},${c+1}`)) continue;
-                
-                let target = Number(consecutiveDigit);
-                if (checkAdjacency(r, c, target) || checkAdjacency(r, c+1, target)) continue;
-                
-                newGrid[r][c] = target;
-                newGrid[r][c+1] = target;
-                forcedLockedCells.add(`${r},${c}`);
-                forcedLockedCells.add(`${r},${c+1}`);
-                
-                break;
-            }
-        }
-
-        // 囲み斁E��とはさまれ文字�E配置
-        if (enclosedDigit != null && sandwichedDigit != null) {
-            // 両方持E��されてぁE��場合�E、Eつの塊（例！E 9 3�E�として配置する
-            let r, c;
-            
-            for(let attempt=0; attempt<100; attempt++) {
-                r = Math.floor(Math.random() * n);
-                let firstValidIdx = COL_COUNT - lengths[r];
-                c = Math.floor(Math.random() * (COL_COUNT - 2 - firstValidIdx)) + firstValidIdx;
-                if (c >= COL_COUNT - 2) continue;
-                if (forcedLockedCells.has(`${r},${c}`) || forcedLockedCells.has(`${r},${c+1}`) || forcedLockedCells.has(`${r},${c+2}`)) continue;
-                
-                let encTarget = Number(enclosedDigit);
-                let sanTarget = Number(sandwichedDigit);
-                
-                // 隣接チェチE��
-                if (checkAdjacency(r, c, encTarget) || checkAdjacency(r, c+2, encTarget) || checkAdjacency(r, c+1, sanTarget)) continue;
-                // 丁E��一 encTarget === sanTarget だった場合�E「連続文字」になってしまぁE��め弾く（通常は別、E�E数字が持E��される想定！E
-                if (encTarget === sanTarget) continue;
-                
-                newGrid[r][c] = encTarget;
-                newGrid[r][c+1] = sanTarget;
-                newGrid[r][c+2] = encTarget;
-                
-                forcedLockedCells.add(`${r},${c}`);
-                forcedLockedCells.add(`${r},${c+1}`);
-                forcedLockedCells.add(`${r},${c+2}`);
-                
-                break;
-            }
-        } else if (enclosedDigit != null) {
-            // 囲み斁E���Eみ
-            let r, c;
-            
-            for(let attempt=0; attempt<100; attempt++) {
-                r = Math.floor(Math.random() * n);
-                let firstValidIdx = COL_COUNT - lengths[r];
-                c = Math.floor(Math.random() * (COL_COUNT - 2 - firstValidIdx)) + firstValidIdx;
-                if (c >= COL_COUNT - 2) continue;
-                if (forcedLockedCells.has(`${r},${c}`) || forcedLockedCells.has(`${r},${c+1}`) || forcedLockedCells.has(`${r},${c+2}`)) continue;
-                
-                let target = Number(enclosedDigit);
-                if (checkAdjacency(r, c, target) || checkAdjacency(r, c+2, target)) continue;
-                
-                newGrid[r][c] = target;
-                newGrid[r][c+2] = target;
-                let center = newGrid[r][c+1];
-                if (center === Number(enclosedDigit) || center === null) {
-                    center = (Number(enclosedDigit) + 1) % 10;
-                    if (center === 0) center = 1;
-                    newGrid[r][c+1] = center;
+                if (diff !== 0) {
+                    const sign = nextMinusRows[freeRowIndex] ? -1 : 1;
+                    const oldDigit = nextGrid[freeRowIndex][COL_COUNT - 1];
+                    let newDigit = (oldDigit + diff * sign) % 10;
+                    if (newDigit < 0) newDigit += 10;
+                    nextGrid[freeRowIndex][COL_COUNT - 1] = newDigit;
                 }
-                forcedLockedCells.add(`${r},${c}`);
-                forcedLockedCells.add(`${r},${c+1}`);
-                forcedLockedCells.add(`${r},${c+2}`);
-                
-                break;
-            }
-        } else if (sandwichedDigit != null) {
-            // はさまれ文字�Eみ
-            let r, c;
-            
-            for(let attempt=0; attempt<100; attempt++) {
-                r = Math.floor(Math.random() * n);
-                let firstValidIdx = COL_COUNT - lengths[r];
-                c = Math.floor(Math.random() * (COL_COUNT - 2 - firstValidIdx)) + firstValidIdx;
-                if (c >= COL_COUNT - 2) continue;
-                if (forcedLockedCells.has(`${r},${c}`) || forcedLockedCells.has(`${r},${c+1}`) || forcedLockedCells.has(`${r},${c+2}`)) continue;
-                
-                let target = Number(sandwichedDigit);
-                if (checkAdjacency(r, c+1, target)) continue;
-
-                // 左右の数字�E適当な数字にする
-                let side = (target + 1) % 10;
-                if (side === 0) side = 1;
-                if (checkAdjacency(r, c, side) || checkAdjacency(r, c+2, side)) continue;
-
-                newGrid[r][c+1] = target;
-                newGrid[r][c] = side;
-                newGrid[r][c+2] = side;
-                forcedLockedCells.add(`${r},${c}`);
-                forcedLockedCells.add(`${r},${c+1}`);
-                forcedLockedCells.add(`${r},${c+2}`);
-                
-                break;
             }
         }
 
-        // 2. 制紁E�E適用�E�E行目、最終行�E持E��値�E�E
-        const msdIndices = newGrid.map(row => {
-            let idx = row.findIndex(digit => digit !== null && digit !== 0);
-            return idx === -1 ? COL_COUNT - 1 : idx;
-        });
-        const lockedCells = new Set(forcedLockedCells);
-        
-        if (n > 0) {
-            const firstRow = newGrid[0];
-            const msd = msdIndices[0];
-            if (firstRowFirstDigit != null) {
-                if (firstRowFirstDigit !== 0) firstRow[msd] = firstRowFirstDigit;
-                lockedCells.add(`0,${msd}`);
-            }
-            if (firstRowLastDigit != null) {
-                firstRow[COL_COUNT - 1] = firstRowLastDigit;
-                lockedCells.add(`0,${COL_COUNT - 1}`);
-            }
-        }
-        if (n > 1) {
-            const lastRow = newGrid[n - 1];
-            const msd = msdIndices[n - 1];
-            if (lastRowFirstDigit != null) {
-                if (lastRowFirstDigit !== 0) lastRow[msd] = lastRowFirstDigit;
-                lockedCells.add(`${n - 1},${msd}`);
-            }
-            if (lastRowLastDigit != null) {
-                lastRow[COL_COUNT - 1] = lastRowLastDigit;
-                lockedCells.add(`${n - 1},${COL_COUNT - 1}`);
+        // 条件設定（包み・挟み・連続桁）の初期埋め込み
+        if (enclosedDigit != null) {
+            const target = Number(enclosedDigit);
+            for (let r = 0; r < n; r++) {
+                const len = rowLengths[r];
+                if (len >= 3) {
+                    const msd = msdIndices[r];
+                    const availableCols = [];
+                    for (let c = msd; c <= COL_COUNT - 3; c++) {
+                        if (!lockedCells.has(`${r},${c}`) && !lockedCells.has(`${r},${c + 2}`)) {
+                            availableCols.push(c);
+                        }
+                    }
+                    if (availableCols.length > 0) {
+                        const startC = availableCols[Math.floor(Math.random() * availableCols.length)];
+                        nextGrid[r][startC] = target;
+                        nextGrid[r][startC + 2] = target;
+                        lockedCells.add(`${r},${startC}`);
+                        lockedCells.add(`${r},${startC + 2}`);
+                        break;
+                    }
+                }
             }
         }
 
-        // 3. バランス調整ループ（特定�E数字が偏らなぁE��ぁE��スワチE�E�E�E
-        for (let iter = 0; iter < 100; iter++) {
-            const freqs = Array(10).fill(0);
-            let totalD = 0;
+        if (sandwichedDigit != null) {
+            const target = Number(sandwichedDigit);
+            for (let r = 0; r < n; r++) {
+                const len = rowLengths[r];
+                if (len >= 3) {
+                    const msd = msdIndices[r];
+                    const availableCols = [];
+                    for (let c = msd + 1; c <= COL_COUNT - 2; c++) {
+                        if (!lockedCells.has(`${r},${c - 1}`) && !lockedCells.has(`${r},${c}`) && !lockedCells.has(`${r},${c + 1}`)) {
+                            availableCols.push(c);
+                        }
+                    }
+                    if (availableCols.length > 0) {
+                        const centerC = availableCols[Math.floor(Math.random() * availableCols.length)];
+                        const outerDigit = Math.floor(Math.random() * 9) + 1;
+                        nextGrid[r][centerC - 1] = outerDigit;
+                        nextGrid[r][centerC] = target;
+                        nextGrid[r][centerC + 1] = outerDigit;
+                        lockedCells.add(`${r},${centerC - 1}`);
+                        lockedCells.add(`${r},${centerC}`);
+                        lockedCells.add(`${r},${centerC + 1}`);
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (consecutiveDigit != null) {
+            const target = Number(consecutiveDigit);
+            for (let r = 0; r < n; r++) {
+                const len = rowLengths[r];
+                if (len >= 2) {
+                    const msd = msdIndices[r];
+                    const availableCols = [];
+                    for (let c = msd; c <= COL_COUNT - 2; c++) {
+                        if (!lockedCells.has(`${r},${c}`) && !lockedCells.has(`${r},${c + 1}`)) {
+                            availableCols.push(c);
+                        }
+                    }
+                    if (availableCols.length > 0) {
+                        const startC = availableCols[Math.floor(Math.random() * availableCols.length)];
+                        nextGrid[r][startC] = target;
+                        nextGrid[r][startC + 1] = target;
+                        lockedCells.add(`${r},${startC}`);
+                        lockedCells.add(`${r},${startC + 1}`);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 3. 盤面の数値微調整（数字出現率均等化ループ）
+        const newGrid = nextGrid.map(row => [...row]);
+
+        for (let iter = 0; iter < 50; iter++) {
+            const counts = Array(10).fill(0);
+            let totalDigitsCount = 0;
+
             for (let r = 0; r < n; r++) {
                 for (let c = 0; c < COL_COUNT; c++) {
-                    if (newGrid[r][c] !== null) { freqs[newGrid[r][c]]++; totalD++; }
+                    if (newGrid[r][c] !== null) {
+                        counts[newGrid[r][c]]++;
+                        totalDigitsCount++;
+                    }
                 }
             }
 
-            const diffs = freqs.map((f, digit) => {
-                let t = totalD / 10;
-                if (plusOneDigit !== null && digit === Number(plusOneDigit)) t += 1;
-                if (minusOneDigit !== null && digit === Number(minusOneDigit)) t -= 1;
-                return f - t;
-            });
+            // 理想の各数字出現数
+            const targetsFreq = Array(10).fill(totalDigitsCount / 10);
+            if (plusOneDigit !== null) targetsFreq[Number(plusOneDigit)] += 1;
+            if (minusOneDigit !== null) targetsFreq[Number(minusOneDigit)] -= 1;
 
-            let maxOver = -Infinity, maxOverDigit = -1;
-            let maxUnder = Infinity, maxUnderDigit = -1;
-            diffs.forEach((d, i) => {
-                if (d > maxOver) { maxOver = d; maxOverDigit = i; }
-                if (d < maxUnder) { maxUnder = d; maxUnderDigit = i; }
-            });
+            let maxOverDigit = -1;
+            let maxOver = 0;
+            let maxUnderDigit = -1;
+            let maxUnder = 0;
 
-            // バランスが取れてぁE��ば終亁E
-            if (maxOver === 0 && maxUnder === 0) {
-                break;
+            for (let d = 0; d < 10; d++) {
+                const diff = counts[d] - targetsFreq[d];
+                if (diff > maxOver) {
+                    maxOver = diff;
+                    maxOverDigit = d;
+                }
+                if (-diff > maxUnder) {
+                    maxUnder = -diff;
+                    maxUnderDigit = d;
+                }
             }
 
-            // 過剰な数字を不足してぁE��数字へスワチE�Eを試みめE
+            if (maxOverDigit === -1 || maxUnderDigit === -1) break;
+
+            // 出現数が過剰な数字セルを探し、出現数が不足している数字に置換
             const candidates = [];
             for (let r = 0; r < n; r++) {
                 for (let c = 0; c < COL_COUNT; c++) {
-                    // 右端の列�E最終桁制紁E��固定してぁE��ためバランス調整のスワチE�E候補から除夁E
-                    if (answerLastDigit != null && c === COL_COUNT - 1) continue;
-                    
+                    if (lockedCells.has(`${r},${c}`)) continue;
+                    if (c === COL_COUNT - 1 && answerLastDigit != null) continue;
+                    if (c === msdIndices[r] && maxUnderDigit === 0) continue; // 先頭桁を0にはできない
+
                     if (newGrid[r][c] === maxOverDigit) {
-                        if (lockedCells.has(`${r},${c}`)) continue;
-                        if (maxUnderDigit === 0 && c === msdIndices[r]) continue; // 先頭をゼロにしなぁE
                         candidates.push({ r, c });
                     }
                 }
             }
+
             if (candidates.length === 0) break;
 
-            const currentEval = evaluateConditions(newGrid, conditions, lockedCells);
             let bestCand = null;
             let maxScore = -Infinity;
 
-            candidates.sort(() => Math.random() - 0.5);
-
-            for (let cand of candidates) {
+            for (const cand of candidates) {
                 const original = newGrid[cand.r][cand.c];
                 newGrid[cand.r][cand.c] = maxUnderDigit;
-                
+
                 const newEval = evaluateConditions(newGrid, conditions, lockedCells);
-                // まず�E condScore�E�条件達�E度�E�を優先、次に penaltyScore の削渁E
-                const score = (newEval.condScore - currentEval.condScore) * 1000 + (currentEval.penaltyScore - newEval.penaltyScore);
+                const score = (newEval.condScore) * 1000 - newEval.penaltyScore;
 
                 if (score > maxScore) {
                     maxScore = score;
@@ -609,15 +451,14 @@ export const generateProblemGrid = ({
             }
         }
 
-        // 3.5 ペナルチE��解消ループ（局所探索�E�オレンジ色を減らすスワチE�E�E�E
-        // 過不足が調整された後、�E現回数を変えずにオレンジ色を消してぁE��
+        // 3.5 ペナルティ解消ループ（局所スワップ探索）
         let currentEval = evaluateConditions(newGrid, conditions, lockedCells);
         for (let iter = 0; iter < 2000; iter++) {
             if (currentEval.penaltyScore === 0 && currentEval.transitionPenalty === 0 && currentEval.condScore === 0) break;
 
             let r1, c1, r2, c2;
             
-            // ペナルチE��が発生してぁE��セル�E�エラーセル�E�を優先的に選ぶ
+            // ペナルティ（不要パターン）が発生しているセルを優先的に選択
             if (currentEval.penaltyCells && currentEval.penaltyCells.length > 0 && Math.random() < 0.8) {
                 let errCell = currentEval.penaltyCells[Math.floor(Math.random() * currentEval.penaltyCells.length)];
                 r1 = errCell.r;
@@ -631,17 +472,15 @@ export const generateProblemGrid = ({
             c2 = Math.floor(Math.random() * COL_COUNT);
 
             if (newGrid[r1][c1] === null || newGrid[r2][c2] === null) continue;
-            if (newGrid[r1][c1] === newGrid[r2][c2]) continue; // 同じ数字なら意味がなぁE
+            if (newGrid[r1][c1] === newGrid[r2][c2]) continue; // 同一数字ならスワップ不要
             if (lockedCells.has(`${r1},${c1}`) || lockedCells.has(`${r2},${c2}`)) continue;
 
-            // 答えの最終桁制紁E��ある場合、右端列�E数字�E種類を変えると最終桁が狂うため、E
-            // 「右端列と、右端列以外�EスワチE�E」�E禁止する�E�右端同士のスワチE�Eは許可�E�E
+            // 答えの最終桁制約がある場合、末尾列と他列のスワップは制限
             if (answerLastDigit != null) {
                 let isRight1 = (c1 === COL_COUNT - 1);
                 let isRight2 = (c2 === COL_COUNT - 1);
-                if (isRight1 !== isRight2) continue; // 牁E��だけ右端なら棁E��
+                if (isRight1 !== isRight2) continue;
                 
-                // 右端同士のスワチE�Eの場合、�Eラス行とマイナス行�E間だと最終桁が変わる可能性があめE
                 if (isRight1 && isRight2) {
                     let sign1 = nextMinusRows[r1] ? -1 : 1;
                     let sign2 = nextMinusRows[r2] ? -1 : 1;
@@ -656,11 +495,11 @@ export const generateProblemGrid = ({
                 }
             }
 
-            // 先頭にゼロが来てしまぁE�Eを防ぁE
+            // 最上位桁がゼロにならないようガード
             if (newGrid[r1][c1] === 0 && c2 === msdIndices[r2]) continue;
             if (newGrid[r2][c2] === 0 && c1 === msdIndices[r1]) continue;
 
-            // スワチE�E実衁E
+            // スワップ実行
             let temp = newGrid[r1][c1];
             newGrid[r1][c1] = newGrid[r2][c2];
             newGrid[r2][c2] = temp;
@@ -670,12 +509,11 @@ export const generateProblemGrid = ({
             const currentTotalPenalty = currentEval.penaltyScore + currentEval.transitionPenalty;
             const newTotalPenalty = newEval.penaltyScore + newEval.transitionPenalty;
 
-            // 焼きなまし法による改悪の許容判宁E
+            // 模擬焼きなまし法（温度パラメータによる確率的許容）
             let revert = false;
             if (newEval.condScore < currentEval.condScore) {
-                revert = true; // condScore の悪化�E絶対に許さなぁE
+                revert = true; // 条件達成スコアの悪化は即リバート
             } else if (newEval.condScore === currentEval.condScore && newTotalPenalty > currentTotalPenalty) {
-                // ペナルチE��の悪化�E確玁E��に許容する�E�温度を下げる！E
                 const tempProb = 0.05 * (1.0 - iter / 2000);
                 if (Math.random() > tempProb) {
                     revert = true;
@@ -683,7 +521,6 @@ export const generateProblemGrid = ({
             }
 
             if (revert) {
-                // 允E��戻ぁE
                 let tempBack = newGrid[r1][c1];
                 newGrid[r1][c1] = newGrid[r2][c2];
                 newGrid[r2][c2] = tempBack;
@@ -692,12 +529,12 @@ export const generateProblemGrid = ({
             }
         }
 
-        // 4. 生�E結果の評価
+        // 4. 最終的な生成盤面の総合スコア評価
         const evalResult = evaluateConditions(newGrid, conditions);
         const currentCondScore = evalResult.condScore;
         const currentPenaltyScore = -evalResult.penaltyScore;
 
-        // 答えの制紁E��満たしてぁE��ぁE
+        // 答えの制約を満たしているか
         let isAnsMinOk = true;
         let isAnsLastOk = true;
         const currentSumFinal = calculateSum(newGrid, nextMinusRows);
@@ -710,7 +547,7 @@ export const generateProblemGrid = ({
             if (s[s.length - 1] !== String(answerLastDigit)) isAnsLastOk = false;
         }
 
-        // 補数計算�E制紁E��満たしてぁE��ぁE
+        // 補数計算の発生制約を満たしているか
         const isComplementOccurred = (currentSumFinal < 0);
         let isComplementOk = (isComplementOccurred === complementStatus);
 
@@ -729,7 +566,7 @@ export const generateProblemGrid = ({
             return f - t;
         });
 
-        // 総合スコアの計箁E
+        // 総合バランススコア
         const currentBalanceScore = -diff2.reduce((acc, val) => acc + Math.abs(val), 0);
         let currentIsBetter = false;
         const currentAnswerMatch = isAnsMinOk && isAnsLastOk && isComplementOk;
@@ -763,12 +600,13 @@ export const generateProblemGrid = ({
             bestAnswerMatch = currentAnswerMatch;
         }
 
+        // 全条件クリア時は早期脱出
         if (currentBalanceScore === 0 && currentCondScore === 0 && currentPenaltyScore === 0 && currentAnswerMatch) {
             break;
         }
     } // End Best-of-N Loop
 
-    const finalGrid = bestGrid ? bestGrid : createInitialGrid(); // 丁E��失敗した際のフォールバック
+    const finalGrid = bestGrid ? bestGrid : createInitialGrid();
 
     return { grid: finalGrid, isMinusRows: bestMinusRows };
 };

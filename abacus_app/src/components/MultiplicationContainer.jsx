@@ -1,3 +1,8 @@
+/**
+ * @file MultiplicationContainer.jsx
+ * @description 掛け算問題（10問分）の入力グリッド編集エリア、および各種統計パネル（連続文字マトリクス、全体・左辺・右辺の数字出現頻度）を統合描画するコンテナコンポーネントです。
+ */
+
 import React from 'react';
 import MultiplicationGrid from './MultiplicationGrid';
 import FrequencyCounter from './FrequencyCounter';
@@ -5,12 +10,18 @@ import ConsecutiveCounter from './ConsecutiveCounter';
 import { useMultiplicationState } from '../hooks/useMultiplicationState';
 import './Multiplication.css';
 
+/**
+ * 掛け算問題作成画面全体コンテナコンポーネント
+ * 
+ * @returns {JSX.Element} 掛け算画面UI
+ */
 const MultiplicationContainer = () => {
     const {
         problems,
         updateDigit,
         toggleDecimal,
         regenerateRow,
+
 
         frequencyAll,
         totalFrequencyAll,

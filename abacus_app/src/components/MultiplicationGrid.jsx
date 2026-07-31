@@ -1,10 +1,27 @@
-import React, { useState, useRef } from 'react';
-import './ProblemGrid.css'; // Reusing existing grid styles where applicable + new specific ones
+/**
+ * @file MultiplicationGrid.jsx
+ * @description 掛け算問題10問の盤面セル編集（被乗数・乗数・小数点設置）、自動問題生成、およびCSV出力/入力機能を備えたグリッドコンポーネントです。
+ */
 
+import React, { useState, useRef } from 'react';
+import './ProblemGrid.css';
+
+/**
+ * 掛け算問題10問分入力・編集グリッドコンポーネント
+ * 
+ * @param {Object} props - コンポーネントProps
+ * @param {Array<Object>} props.problems - 10問分の掛け算問題オブジェクト配列
+ * @param {Function} props.updateDigit - セル数字更新ハンドラー
+ * @param {Function} props.toggleDecimal - 小数点設定ハンドラー
+ * @param {Function} props.generateRandomProblems - 一括自動生成関数
+ * @param {Function} props.replaceProblems - CSVインポート用一括更新関数
+ * @returns {JSX.Element} 掛け算入力グリッドUI
+ */
 const MultiplicationGrid = ({ problems, updateDigit, toggleDecimal, generateRandomProblems, replaceProblems }) => {
-    // activeCell: { problemIndex, side ('left'|'right'), colIndex }
+    // アクティブ選択セル: { problemIndex, side ('left'|'right'), colIndex } | null
     const [activeCell, setActiveCell] = useState(null);
     const fileInputRef = useRef(null);
+
 
     const handleDigitSelect = (value, e) => {
         e.stopPropagation();

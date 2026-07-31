@@ -1,21 +1,39 @@
+/**
+ * @file useDivisionState.js
+ * @description 割り算問題(10問分)の状態管理、桁/小数点編集、Web Workerを用いた非同期一括生成、および統計計算機能を提供するカスタムフックです。
+ */
+
 import { useState, useMemo, useCallback } from 'react';
 import { regenerateDivisionRow } from '../utils/divisionGenerator';
 import { calculateDivisionStats } from '../utils/divisionValidator';
 import { createInitialDivisionState } from '../constants/initialState';
 import DivisionWorker from '../workers/divisionWorker.js?worker&inline';
 
+/**
+ * 割り算問題群（10問）の状態と操作関数群を提供するカスタムフック
+ * 
+ * @returns {Object} 状態、編集用ハンドラー、Web Worker自動生成関数、集計統計オブジェクト
+ */
 export const useDivisionState = () => {
-    // 10問分の状態を初期化
+    /** 10問分の割り算問題状態配列 */
     const [problems, setProblems] = useState(() =>
         Array(10).fill(null).map(() => createInitialDivisionState())
     );
+    /** バックグラウンドWeb Workerによる自動生成中のローディング状態 */
     const [isGenerating, setIsGenerating] = useState(false);
 
-    // 特定の問題の、特定の桁の数字を更新
+    /**
+     * 特定の問題の指定フィールド（dividend:割られる数 / divisor:割る数 / answer:商）の特定桁の数字を変更します。
+     * 
+     * @param {number} problemIndex - 問題番号のインデックス (0-9)
+     * @param {'dividend'|'divisor'|'answer'} field - フィールド種別
+     * @param {number} digitIndex - 桁インデックス
+     * @param {number|null} value - 設定する値 (0-9 または null)
+     */
     const updateDigit = useCallback((problemIndex, field, digitIndex, value) => {
         setProblems(prev => {
             const next = [...prev];
-            // 状態を直接変更しないようにディープコピー
+            // 不変性を保持するためディープコピー
             next[problemIndex] = {
                 ...next[problemIndex],
                 [field]: [...next[problemIndex][field]]
@@ -25,13 +43,19 @@ export const useDivisionState = () => {
         });
     }, []);
 
-    // 小数点の位置を切り替え
+    /**
+     * 特定の割り算問題・フィールドの小数点位置を設定または解除（トグル）します。
+     * 
+     * @param {number} problemIndex - 問題番号のインデックス (0-9)
+     * @param {'dividend'|'divisor'|'answer'} field - フィールド種別
+     * @param {number} digitIndex - 小数点を設置する桁インデックス
+     */
     const toggleDecimal = useCallback((problemIndex, field, digitIndex) => {
         setProblems(prev => {
             const next = [...prev];
             const decimalKey = 'decimal' + field.charAt(0).toUpperCase() + field.slice(1);
             const currentDecimal = next[problemIndex][decimalKey];
-            // すでに小数点がある場所をクリックした場合は解除(null)、それ以外は設定
+            // すでに同位置に小数点がある場合は解除(null)、それ以外は設定
             const newDecimal = currentDecimal === digitIndex ? null : digitIndex;
 
             next[problemIndex] = {
@@ -42,7 +66,13 @@ export const useDivisionState = () => {
         });
     }, []);
 
-    // 1つの問題の1つの項目（割られる数、割る数、答えのいずれか）だけを再生成
+    /**
+     * 1つの問題の1項目（割られる数・割る数・商のいずれか）を指定桁数でランダム再生成します。
+     * 
+     * @param {number} problemIndex - 問題番号のインデックス (0-9)
+     * @param {'dividend'|'divisor'|'answer'} field - フィールド種別
+     * @param {number} length - 再生成する桁数
+     */
     const regenerateRow = useCallback((problemIndex, field, length) => {
         setProblems(prev => {
             const next = [...prev];
@@ -51,13 +81,18 @@ export const useDivisionState = () => {
         });
     }, []);
 
-    // 10問すべてを一括でランダム生成 (Web Workerを使用してバックグラウンド実行)
+    /**
+     * Web Worker（divisionWorker）を使用して10問の割り算問題をバックグラウンドで全自動生成します。
+     * UIの描画が停止・フリーズするのを防ぐ非同期設計です。
+     */
     const generateRandomProblems = useCallback(() => {
-        if (isGenerating) return; // 既に生成中の場合は何もしない
+        if (isGenerating) return; // 二重実行防止
         setIsGenerating(true);
         
+        // インラインWeb Workerをインスタンス化
         const worker = new DivisionWorker();
         
+        // メッセージ受信（生成完了・エラー）のハンドラ設定
         worker.onmessage = (e) => {
             if (e.data.type === 'SUCCESS') {
                 setProblems(e.data.payload);
@@ -74,10 +109,11 @@ export const useDivisionState = () => {
             worker.terminate();
         };
 
+        // Workerへ生成リクエスト送信
         worker.postMessage({ type: 'GENERATE' });
     }, [isGenerating]);
 
-    // 現在の問題（problems）に基づき統計情報を計算
+    /** 10問分の割り算問題の統計情報（数字出現頻度、還元商/確信商等の解法難易度統計）の自動計算 */
     const stats = useMemo(() => calculateDivisionStats(problems), [problems]);
 
     return {
@@ -89,7 +125,8 @@ export const useDivisionState = () => {
         replaceProblems: setProblems,
         isGenerating,
         
-        // 統計情報をそのまま展開して返す
+        // 統計情報をスプレッド展開して返却
         ...stats 
     };
 };
+

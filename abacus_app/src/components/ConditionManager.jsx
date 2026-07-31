@@ -1,11 +1,25 @@
 /* eslint-disable react-hooks/purity */
+/**
+ * @file ConditionManager.jsx
+ * @description 見取り算10問分の各種作問制約条件（桁数、口数、総字数、出現数字指定、初口/最終口/答え桁指定、補数、マイナスなど）を一覧表示・一括編集・自動生成できるマネージャーコンポーネントです。
+ */
+
 import React, { useState } from 'react';
 import { generateProblemGrid } from '../utils/problemGenerator';
 import './ConditionManager.css';
 
+/**
+ * 全見取り算問題(10問分)の条件一括表示・編集・自動生成を行うコンポーネント
+ * 
+ * @param {Object} props
+ * @param {Array<Object>} props.problems - 10問分の見取り算問題状態データ
+ * @param {Function} props.onUpdate - 個別問題状態の更新コールバック (index, newState) => void
+ * @returns {JSX.Element} 条件マネージャーUI
+ */
 const ConditionManager = ({ problems, onUpdate }) => {
-    // Active selector state: { problemIndex, key } | null
+    /** アクティブなポップオーバー選択枠の状態 { problemIndex, key } | null */
     const [activeSelector, setActiveSelector] = useState(null);
+    /** 一括問題生成中のローディング状態 */
     const [isGenerating, setIsGenerating] = useState(false);
 
     const lengths = [5, 6, 7, 8, 9, 10, 11, 12];
@@ -13,7 +27,7 @@ const ConditionManager = ({ problems, onUpdate }) => {
     const rowOptions = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
     const digitOptions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-    // Configuration for each row
+    // マネージャーのテーブル各行の定義構成
     const rows = [
         { label: '総字数', key: 'targetTotalDigits', options: totalOptions },
         { label: '口数', key: 'rowCount', options: rowOptions },
@@ -53,6 +67,7 @@ const ConditionManager = ({ problems, onUpdate }) => {
         { label: 'マイナス', key: 'hasMinus', type: 'toggle', format: val => val ? 'あり' : 'なし', warnKey: 'isMinusValid' },
         { label: '補数計算', key: 'complementStatus', type: 'toggle', format: val => val ? '補数計算あり' : 'なし', warnKey: 'isComplementValid' },
     ];
+
 
     /**
      * セル内のポップオーバーから値が選択された時の処理

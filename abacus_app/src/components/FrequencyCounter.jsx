@@ -1,6 +1,24 @@
+/**
+ * @file FrequencyCounter.jsx
+ * @description 見取り算・掛け算問題における行別・数字別(0-9)の出現頻度、行ごとの有効桁数、過多警告、および合計差分を表示する統計集計コンポーネントです。
+ */
+
 import React, { useState, useMemo } from 'react';
 import './Stats.css';
 
+/**
+ * 数字出現頻度および桁数集計パネルコンポーネント
+ * 
+ * @param {Object} props - コンポーネントProps
+ * @param {Array<Array<number>>} props.frequency - 各行ごとの0-9出現回数配列 [row][digit]
+ * @param {Array<number>} props.totalFrequency - 全行の0-9合計出現回数配列
+ * @param {Array<number>} props.frequencyDiffs - 理想平均値に対する各数字の過不足差分配列
+ * @param {Array<number>} props.rowDigitCounts - 各行の有効桁数配列
+ * @param {number} props.totalRowDigits - 問題全体の合計有効桁数
+ * @param {number} [props.targetTotalDigits] - 目標とする全体合計桁数
+ * @param {Function} props.updateRowDigitCount - 行桁数変更・ランダム生成ハンドラー
+ * @returns {JSX.Element} 出現回数統計パネルUI
+ */
 const FrequencyCounter = ({
     frequency,
     totalFrequency,
@@ -15,7 +33,9 @@ const FrequencyCounter = ({
     readOnlyDigitCount = false,
     warnThreshold = 3
 }) => {
-    const [activeSelector, setActiveSelector] = useState(null); // { rowIndex }
+    /** アクティブな桁数選択ポップオーバー状態 { rowIndex } | null */
+    const [activeSelector, setActiveSelector] = useState(null);
+
 
     const lengths = useMemo(() => {
         const min = Math.min(minDigit || 5, maxDigit || 12);

@@ -1,23 +1,42 @@
+/**
+ * @file multiplicationGenerator.js
+ * @description 掛け算問題(10問分)の自動生成アルゴリズムを提供するユーティリティです。
+ * 桁数の配分(合計10〜12桁)、各数字(0-9)の全問題を通じた出現頻度の均等化、1未満の小数の割り振りと四捨五入（切り上げ2・切り捨て2）のバランス生成などを制御します。
+ */
+
 import { createInitialMultiplicationState } from '../constants/initialState.js';
 
+/**
+ * 掛け算問題の1つの口（左辺または右辺）を指定桁数でランダムに再生成します。
+ * 
+ * @param {Object} currentProblem - 現在の掛け算問題データ
+ * @param {'left'|'right'} side - 再生成対象（left:被乗数 / right:乗数）
+ * @param {number|'R'} length - 再生成する桁数（'R'の場合は4〜7桁からランダム）
+ * @returns {Object} 更新された掛け算問題データ
+ */
 export const regenerateMultiplicationRow = (currentProblem, side, length) => {
     const updatedProblem = { ...currentProblem };
     let finalLength = length;
+    // 'R'が指定された場合は4〜7桁からランダムに決定
     if (length === 'R') finalLength = Math.floor(Math.random() * 4) + 4;
 
+    // 0〜9の数字プールをシャッフル
     const digitsPool = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
     for (let i = digitsPool.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [digitsPool[i], digitsPool[j]] = [digitsPool[j], digitsPool[i]];
     }
     const newDigits = digitsPool.slice(0, finalLength);
+    // 先頭桁が0にならないよう入れ替え
     if (newDigits[0] === 0) [newDigits[0], newDigits[1]] = [newDigits[1], newDigits[0]];
 
+    // 7桁固定配列の右詰めで配置
     const newArray = Array(7).fill(null);
     const startIndex = 7 - finalLength;
     for (let k = 0; k < finalLength; k++) newArray[startIndex + k] = newDigits[k];
     updatedProblem[side] = newArray;
 
+    // 右辺の場合は30%の確率で小数点を付与
     if (side === 'right') {
         if (Math.random() < 0.3) {
             const k = Math.floor(Math.random() * (finalLength - 1));
@@ -31,6 +50,12 @@ export const regenerateMultiplicationRow = (currentProblem, side, length) => {
     return updatedProblem;
 };
 
+/**
+ * 条件を満たす10問の掛け算問題を全自動で生成します。
+ * 最大50回の試行を行い、成功した問題セットを返します。
+ * 
+ * @returns {Array<Object>} 10問分の掛け算問題状態オブジェクトの配列
+ */
 export const generateMultiplicationProblems = () => {
     let attempts = 0;
     
@@ -39,13 +64,25 @@ export const generateMultiplicationProblems = () => {
         const problems = _generateMultiplicationProblems_internal();
         if (problems) return problems;
     }
-    console.warn("フォールバックとして結果を返します");
+    console.warn("フォールバックとして空の初期状態を返します");
     return Array(10).fill(null).map(() => createInitialMultiplicationState());
 };
 
+/**
+ * 掛け算問題群生成の内部処理メイン関数
+ * 1. 左右の桁数配分決定
+ * 2. 数字(0-9)の出現頻度均等化プール作成
+ * 3. 連続桁・挟み桁などのパターン配置
+ * 4. 積の先頭桁重複防止チェック
+ * 5. 四捨五入バランス（切り上げ2問、切り捨て2問）および1未満の小数の配置
+ * 
+ * @private
+ * @returns {Array<Object>|null} 10問分の問題配列、生成失敗時はnull
+ */
 const _generateMultiplicationProblems_internal = () => {
     let countsA, countsB;
     let countAttempts = 0;
+    // 1. 各問の桁数（4〜7桁、左右合計10〜12桁）の試行決定
     while (countAttempts < 1000) {
         countAttempts++;
         const generateCounts = () => {
@@ -72,6 +109,7 @@ const _generateMultiplicationProblems_internal = () => {
     }
     if (!countsA || !countsB) return null;
 
+    // 2. 0〜9の数字出現度均等割り当てプール
     const possibleDigits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
     const shuffle = (arr) => {
         for (let i = arr.length - 1; i > 0; i--) {
@@ -95,6 +133,7 @@ const _generateMultiplicationProblems_internal = () => {
         for (let k = 0; k < remaining; k++) poolB_Base.push(digit);
     }
 
+    /** 連続桁と挟み桁を配置する行ターゲットを選択 */
     const pickTargets = () => {
         const arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
         shuffle(arr);
@@ -103,6 +142,7 @@ const _generateMultiplicationProblems_internal = () => {
     const targetsA = pickTargets();
     const targetsB = pickTargets();
 
+    /** プールから数字を取り出し、先頭・末尾・中間桁を初期配置 */
     const setupSide = (counts, basePool) => {
         const rows = counts.map(len => ({ len, digits: Array(len).fill(null) }));
         const takeFromPool = (pool, val) => {
@@ -133,6 +173,7 @@ const _generateMultiplicationProblems_internal = () => {
     const rowsA = setupSide(countsA, [...poolA_Base]);
     const rowsB = setupSide(countsB, [...poolB_Base]);
 
+    /** 行内での連続桁・挟み桁などの評価スコア */
     const getRowPatternScore = (rowDigits) => {
         let score = 0;
         for (let i = 0; i < rowDigits.length; i++) {
@@ -144,6 +185,7 @@ const _generateMultiplicationProblems_internal = () => {
         return score;
     };
 
+    /** 2数字の遷移（並び順）重複過多のチェックペナルティ評価 */
     const calculateTransitions = (rA, rB) => {
         let score = 0;
         const transitions = Array(10).fill(null).map(() => Array(10).fill(0));
@@ -157,6 +199,7 @@ const _generateMultiplicationProblems_internal = () => {
         return score;
     };
 
+    /** 全体パターンスコア（不要な重複がないか）の計算 */
     const calculateTotalScoreOriginal = (rA, rB) => {
         let score = 0;
         rA.forEach(r => score += getRowPatternScore(r.digits));
@@ -165,7 +208,7 @@ const _generateMultiplicationProblems_internal = () => {
         return score;
     };
 
-    // 最適化ループ（パターンを0にする）
+    // 最適化ループ（不要パターンを0にする山登り法）
     let currentScore = calculateTotalScoreOriginal(rowsA, rowsB);
     const startTime = Date.now();
     const DURATION = 2000;
@@ -205,7 +248,7 @@ const _generateMultiplicationProblems_internal = () => {
     
     if (currentScore > 0) return null;
 
-    // 後処理：意図的なスワップでパターンを1つずつ作る
+    /** 後処理：指定したターゲット行に意図した連続・挟みパターンを正確に1つずつ作成するスワップ処理 */
     const applyPatternsPostProcess = (sideRows, targets, forbidden = { consecutiveDigit: null, sandwichOuter: null, sandwichInner: null }, maxLoops = 100000) => {
         const evaluateSwap = () => {
             let pScore = 0;
@@ -244,11 +287,6 @@ const _generateMultiplicationProblems_internal = () => {
             return pScore + transScore;
         };
 
-
-
-        // よりシンプルな総当り：
-        // ランダムにスワップを試行し、evaluateSwap() が 0 になるまでループ
-        // 目標が明確（2つの特定行に1つずつ作るだけ）なので、総当りのほうが見つけやすい。
         let pScore = evaluateSwap();
         let loop = 0;
         while(pScore > 0 && loop < maxLoops) {
@@ -266,11 +304,9 @@ const _generateMultiplicationProblems_internal = () => {
             sideRows[r2].digits[i2] = val1;
             
             const newScore = evaluateSwap();
-            // 山登り（同じか良くなったら採用）
             if (newScore <= pScore) {
                 pScore = newScore;
             } else {
-                // 戻す
                 sideRows[r1].digits[i1] = val1;
                 sideRows[r2].digits[i2] = val2;
             }
@@ -280,7 +316,7 @@ const _generateMultiplicationProblems_internal = () => {
 
     if (!applyPatternsPostProcess(rowsA, targetsA, { consecutiveDigit: null, sandwichOuter: null, sandwichInner: null }, 100000)) return null;
     
-    // A側で作られたパターン構成数字を抽出
+    /** A側で作成されたパターンの構成数字を抽出 */
     const extractPatternDigits = (sideRows, targets) => {
         let consecutiveDigit = null;
         let sandwichOuter = null;
@@ -303,18 +339,17 @@ const _generateMultiplicationProblems_internal = () => {
 
     const forbiddenB = extractPatternDigits(rowsA, targetsA);
 
-    // B側の最適化（抽出した数字を同種のパターンで使わないようにする、探索回数を30万回に増強）
+    // B側のパターン生成
     if (!applyPatternsPostProcess(rowsB, targetsB, forbiddenB, 300000)) return null;
 
-    // シャッフル前の元のインデックスを保持
     rowsB.forEach((r, idx) => { r.originalIdx = idx; });
 
+    // 左右ペアリング（積の先頭桁が1〜9まで全数字重複なく出現するかを検証）
     let foundValidPairing = false;
     let shuffleAttempts = 0;
     while (shuffleAttempts < 5000) {
         shuffleAttempts++;
         if (shuffleAttempts > 1) {
-            // rowsB をシャッフル
             for (let i = 9; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [rowsB[i], rowsB[j]] = [rowsB[j], rowsB[i]];
@@ -355,9 +390,7 @@ const _generateMultiplicationProblems_internal = () => {
 
     if (!foundValidPairing) return null;
 
-    // ============================================
-    // 小数点のロジック（四捨五入バランスと1未満の数）
-    // ============================================
+    // --- 小数点位置と四捨五入型（切り上げ / 切り捨て）の判別補助関数 ---
     const getDecimalResultType = (valAStr, valBStr, decIdx) => {
         const valA = parseInt(valAStr, 10);
         const valB = parseFloat(valBStr.slice(0, decIdx + 1) + "." + valBStr.slice(decIdx + 1));
@@ -371,23 +404,22 @@ const _generateMultiplicationProblems_internal = () => {
     for (let rIdx = 0; rIdx < 10; rIdx++) {
         const rAStr = rowsA[rIdx].digits.join('');
         
-        // パターンが設定された行は1未満の数（切り詰め）の対象から外す
         const isPatternRow = (rowsB[rIdx].originalIdx === targetsB.consecutive || rowsB[rIdx].originalIdx === targetsB.sandwich);
         
         if (!isPatternRow) {
-            // 1未満の候補（zeroCount 1, 2, 3 全て試す）
+            // 1未満の小数の候補検索（先頭ゼロ埋め 0.xxx）
             for (let zc = 1; zc <= 3; zc++) {
                 let tempLen = rowsB[rIdx].len;
                 let tempZC = zc;
                 if (tempLen + tempZC > 7) {
-                    continue; // 枠に収まらない場合は候補にしない
+                    continue;
                 }
                 if (tempZC > 0) {
                     let rBStr = "";
                     for(let i = 0; i < tempZC; i++) rBStr += "0";
                     rBStr += rowsB[rIdx].digits.slice(0, tempLen).join('');
                     
-                    const decIdx = 0; // 常に最初のゼロの直後に小数点を打つ
+                    const decIdx = 0;
                     const type = getDecimalResultType(rAStr, rBStr, decIdx);
                     if (type === 'up' || type === 'down') {
                         candidates[type].push({
@@ -403,7 +435,7 @@ const _generateMultiplicationProblems_internal = () => {
             }
         }
 
-        // 通常の小数候補
+        // 通常の小数点付け替え候補
         const rBStr = rowsB[rIdx].digits.join('');
         for (let pos = 0; pos < rowsB[rIdx].len - 1; pos++) {
             const type = getDecimalResultType(rAStr, rBStr, pos);
@@ -421,6 +453,7 @@ const _generateMultiplicationProblems_internal = () => {
     shuffle(candidates.up);
     shuffle(candidates.down);
 
+    // 切り上げ2問、切り捨て2問のバランス構成を決定
     let selectedCombo = null;
     const lessThanOneTarget = Math.random() < 0.9 ? 1 : 2;
 
@@ -484,6 +517,7 @@ const _generateMultiplicationProblems_internal = () => {
 
     if (!selectedCombo) return null;
 
+    // 最終的な10問の問題データ形式に格納・返却
     const finalProblems = [];
     for (let i = 0; i < 10; i++) {
         const p = createInitialMultiplicationState();
@@ -513,3 +547,4 @@ const _generateMultiplicationProblems_internal = () => {
     }
     return finalProblems;
 };
+

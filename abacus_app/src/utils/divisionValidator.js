@@ -1,11 +1,13 @@
 /**
- * 除算の問題（problems）の統計情報（出現回数、連続文字など）を計算するモジュール。
- * UI（React State）から独立しています。
+ * @file divisionValidator.js
+ * @description 割り算問題(10問)における「割る数(divisor)」および「商・答え(answer)」の数字出現頻度、有効桁数、連続桁マトリクス等の統計情報を計算する集計・検証モジュールです。
  */
 
 /**
- * 渡された桁配列の集合（dataSets）から、各数字(0-9)の出現回数を各行ごとに計算します。
- * @param {Array<Array<number|null>>} dataSets - 桁データの配列
+ * 渡された桁配列の集合（dataSets）から、各数字(0-9)の出現回数を各行（各問題）ごとに計算します。
+ * 数値の先頭のゼロ（leading zeros）は除外します。
+ * 
+ * @param {Array<Array<number|null>>} dataSets - 桁数値配列のコレクション
  * @returns {Array<Array<number>>} [行インデックス][数字(0-9)] -> 出現回数 の2次元配列
  */
 const calculateFrequency = (dataSets) => {
@@ -15,8 +17,9 @@ const calculateFrequency = (dataSets) => {
         row.forEach(digit => {
             if (digit !== null && digit !== undefined && digit !== '') {
                 const num = Number(digit);
+                // 先頭のゼロはカウントからスキップ
                 if (num === 0 && !foundNonZero) {
-                    return; // Skip leading zeros
+                    return;
                 }
                 if (num !== 0) {
                     foundNonZero = true;
@@ -29,9 +32,10 @@ const calculateFrequency = (dataSets) => {
 };
 
 /**
- * 各行ごとの出現回数テーブルから、全体の数字ごとの出現回数を計算します。
- * @param {Array<Array<number>>} freqTable - calculateFrequency で計算された2次元配列
- * @returns {Array<number>} 全体の数字(0-9)ごとの出現回数
+ * 各行ごとの出現回数テーブルを集計し、全体の数字(0-9)ごとの通算出現回数を算定します。
+ * 
+ * @param {Array<Array<number>>} freqTable - calculateFrequencyで算出された行別出現回数テーブル
+ * @returns {Array<number>} 数字(0-9)ごとの合計出現回数配列
  */
 const calculateTotalFrequency = (freqTable) => {
     const total = Array(10).fill(0);
@@ -44,9 +48,10 @@ const calculateTotalFrequency = (freqTable) => {
 };
 
 /**
- * 各行ごとの実際の桁数（入力されている数字の数）を計算します。
- * @param {Array<Array<number|null>>} dataSets - 桁データの配列
- * @returns {Array<number>} 各行の桁数
+ * 各行ごとの実際の有効桁数（先頭ゼロを除く入力数字の個数）を計算します。
+ * 
+ * @param {Array<Array<number|null>>} dataSets - 桁数値配列のコレクション
+ * @returns {Array<number>} 各行の有効桁数配列
  */
 const calculateRowDigitCounts = (dataSets) => {
     return dataSets.map(row => {
@@ -56,7 +61,7 @@ const calculateRowDigitCounts = (dataSets) => {
             if (digit !== null && digit !== undefined && digit !== '') {
                 const num = Number(digit);
                 if (num === 0 && !foundNonZero) {
-                    return; // Skip leading zeros
+                    return; // 先頭ゼロをスキップ
                 }
                 if (num !== 0) {
                     foundNonZero = true;
@@ -69,20 +74,20 @@ const calculateRowDigitCounts = (dataSets) => {
 };
 
 /**
- * 除算の全問題の統計情報を計算します。
- * 条件としてチェックするのは「割る数(divisor)」と「答え(answer)」のみ。
- * @param {Array<Object>} problems - 問題オブジェクトの配列
- * @returns {Object} 統計情報
+ * 10問分の割り算問題オブジェクト配列から、割る数・商および全体の詳細統計情報を計算します。
+ * 
+ * @param {Array<Object>} problems - 10問分の割り算問題オブジェクト配列
+ * @returns {Object} 集計結果オブジェクト（割る数・商・全体の出現頻度、桁数、目標差分、連続文字等）
  */
 export const calculateDivisionStats = (problems) => {
-    // 1. 全体（割る数 + 答え）の統計
+    // 1. 全体（割る数 + 答え）の集計
     const allRows = problems.map(p => [...p.divisor, ...p.answer]);
     const frequencyAll = calculateFrequency(allRows);
     const totalFrequencyAll = calculateTotalFrequency(frequencyAll);
     const rowDigitCountsAll = calculateRowDigitCounts(allRows);
     const totalRowDigitsAll = rowDigitCountsAll.reduce((sum, count) => sum + count, 0);
 
-    // 除算（割る数＋答え）の場合、全体の目標桁数は110（各数字11回）
+    // 割り算（割る数＋答え）の場合、全体の目標合計桁数は110桁（各数字0-9が平均11回出現するのが理想）
     const targetTotalDigitsAll = 110;
     const frequencyDiffsAll = totalFrequencyAll.map(count => count - 11);
 
@@ -93,18 +98,18 @@ export const calculateDivisionStats = (problems) => {
     const rowDigitCountsDivisor = calculateRowDigitCounts(divisorRows);
     const totalRowDigitsDivisor = rowDigitCountsDivisor.reduce((sum, count) => sum + count, 0);
 
-    // 3. 答え（answer）のみの統計
+    // 3. 答え・商（answer）のみの統計
     const answerRows = problems.map(p => p.answer);
     const frequencyAnswer = calculateFrequency(answerRows);
     const totalFrequencyAnswer = calculateTotalFrequency(frequencyAnswer);
     const rowDigitCountsAnswer = calculateRowDigitCounts(answerRows);
     const totalRowDigitsAnswer = rowDigitCountsAnswer.reduce((sum, count) => sum + count, 0);
 
-    // 4. 連続文字のチェック（割る数、答えそれぞれの中で連続している数字をカウント）
+    // 4. 連続文字のチェック（割る数、答えそれぞれの内部で隣接する2数字ペアのカウント）
     const consecutive = Array(10).fill(null).map(() => Array(10).fill(0)); // [d1][d2] マトリクス
 
     problems.forEach(p => {
-        // 割る数の連続チェック（頭の0をスキップ）
+        // 割る数の連続チェック（先頭のゼロはスキップ）
         let foundNonZeroDivisor = false;
         let lastValidDivisor = null;
         for (let i = 0; i < p.divisor.length; i++) {
@@ -120,7 +125,7 @@ export const calculateDivisionStats = (problems) => {
             }
         }
         
-        // 答えの連続チェック（頭の0をスキップ）
+        // 答えの連続チェック（先頭のゼロはスキップ）
         let foundNonZeroAnswer = false;
         let lastValidAnswer = null;
         for (let i = 0; i < p.answer.length; i++) {
@@ -138,20 +143,21 @@ export const calculateDivisionStats = (problems) => {
     });
 
     return {
-        frequencyAll,
-        totalFrequencyAll,
-        rowDigitCountsAll,
-        totalRowDigitsAll,
-        frequencyDiffsAll,
-        targetTotalDigitsAll,
-        frequencyDivisor,
-        totalFrequencyDivisor,
-        rowDigitCountsDivisor,
-        totalRowDigitsDivisor,
-        frequencyAnswer,
-        totalFrequencyAnswer,
-        rowDigitCountsAnswer,
-        totalRowDigitsAnswer,
-        consecutive
+        frequencyAll,           // 各問題の（割る数＋商）数字出現頻度
+        totalFrequencyAll,      // 全問題通算の数字別出現頻度
+        rowDigitCountsAll,      // 各問題の合計桁数
+        totalRowDigitsAll,      // 全問題通算の総桁数
+        frequencyDiffsAll,      // 理想平均(11回)との差分
+        targetTotalDigitsAll,   // 目標総桁数 (110)
+        frequencyDivisor,       // 割る数の問題・数字別出現頻度
+        totalFrequencyDivisor,  // 割る数の全問題通算・数字別出現頻度
+        rowDigitCountsDivisor,  // 割る数の問題別桁数
+        totalRowDigitsDivisor,  // 割る数の総桁数
+        frequencyAnswer,        // 商（答え）の問題・数字別出現頻度
+        totalFrequencyAnswer,   // 商（答え）の全問題通算・数字別出現頻度
+        rowDigitCountsAnswer,   // 商（答え）の問題別桁数
+        totalRowDigitsAnswer,   // 商（答え）の総桁数
+        consecutive             // 2数字ペア連続出現度マトリクス [d1][d2]
     };
 };
+

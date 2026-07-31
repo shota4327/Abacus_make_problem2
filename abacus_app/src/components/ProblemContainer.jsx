@@ -1,3 +1,8 @@
+/**
+ * @file ProblemContainer.jsx
+ * @description 単一の見取り算問題（1問分）の編集グリッド、各種作問条件入力パネル、出現頻度表、連続文字マトリクスを統合描画し、状態変更を親コンポーネント(App.jsx)に同期させる画面コンテナコンポーネントです。
+ */
+
 import React, { useEffect, useRef } from 'react';
 import ProblemGrid from './ProblemGrid';
 import FrequencyCounter from './FrequencyCounter';
@@ -5,8 +10,17 @@ import ConsecutiveCounter from './ConsecutiveCounter';
 import ConditionPanel from './ConditionPanel';
 import { useProblemState } from '../hooks/useProblemState';
 
+/**
+ * 単一見取り算問題編集コンテナコンポーネント
+ * 
+ * @param {Object} props - コンポーネントProps
+ * @param {Object} props.initialData - 問題の初期設定・盤面データ
+ * @param {Function} props.onUpdate - 親コンポーネント(App.jsx)への状態同期通知コールバック (newState) => void
+ * @param {number} props.pageIndex - 問題番号 (1-10)
+ * @returns {JSX.Element} 個別見取り算問題編集画面UI
+ */
 const ProblemContainer = ({ initialData, onUpdate, pageIndex }) => {
-    // Initialize useProblemState with the passed data for this specific problem
+    // カスタムフックで問題の状態と操作ロジックを取得
     const {
         grid, updateDigit, rowCount,
         minDigit, setMinDigit,
@@ -33,11 +47,11 @@ const ProblemContainer = ({ initialData, onUpdate, pageIndex }) => {
         isEnclosedUsed, isSandwichedUsed, isConsecutiveUsed,
         isFirstMinValid, isFirstMaxValid, isLastMinValid, isLastMaxValid, isAnsMinValid, isAnsMaxValid,
         totalSum,
-        consecutive, // Added
-        isMinusRows, toggleRowMinus, // Added
+        consecutive,
+        isMinusRows, toggleRowMinus,
         hasMinus, setHasMinus,
-        currentState, // New snapshot object
-        importState // New
+        currentState,
+        importState
     } = useProblemState(initialData);
 
     const onUpdateRef = useRef(onUpdate);
@@ -45,12 +59,13 @@ const ProblemContainer = ({ initialData, onUpdate, pageIndex }) => {
         onUpdateRef.current = onUpdate;
     });
 
-    // Sync state back to parent whenever it changes
+    // 内部状態(currentState)が変更されるたびに親(App.jsx)へ同期待機データを通知
     useEffect(() => {
         if (onUpdateRef.current && currentState) {
             onUpdateRef.current(currentState);
         }
     }, [currentState]);
+
 
     return (
         <>

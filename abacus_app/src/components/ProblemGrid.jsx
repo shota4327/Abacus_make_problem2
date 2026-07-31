@@ -1,12 +1,35 @@
+/**
+ * @file ProblemGrid.jsx
+ * @description 見取り算（20行×13列）の各セル数値入力・マイナス切り替え、自動作成ボタン、およびCSV書き出し／読み込み（インポート/エクスポート）を行う盤面描画コンポーネントです。
+ */
+
 import React, { useState, useRef } from 'react';
 import './ProblemGrid.css';
 
+/**
+ * 見取り算問題盤面編集コンポーネント
+ * 
+ * @param {Object} props - コンポーネントProps
+ * @param {Array<Array<number|null>>} props.grid - 20x13の見取り算数値セル配列
+ * @param {Function} props.updateDigit - セル数字更新ハンドラー (rowIndex, colIndex, value) => void
+ * @param {number} props.rowCount - 有効な行数（口数）
+ * @param {boolean[]} props.isMinusRows - 行別マイナスフラグ配列
+ * @param {Function} props.toggleRowMinus - 行マイナス切替ハンドラー
+ * @param {number} props.totalSum - 総合計（答え）
+ * @param {Function} props.generateRandomGrid - ランダム自動生成関数
+ * @param {number} props.pageIndex - 問題番号 (1-10)
+ * @param {Function} props.importState - CSVインポート一括更新関数
+ * @param {Object} props.currentConditions - 現在の問題作問条件スナップショット
+ * @returns {JSX.Element} 見取り算盤面UI
+ */
 const ProblemGrid = ({
     grid, updateDigit, rowCount, isMinusRows, toggleRowMinus, totalSum,
     generateRandomGrid, pageIndex, importState, currentConditions
 }) => {
-    const [activeCell, setActiveCell] = useState(null); // {row, col}
+    /** アクティブ入力選択中セル { row, col } | null */
+    const [activeCell, setActiveCell] = useState(null);
     const fileInputRef = useRef(null);
+
 
     const handleCellClick = (row, col) => {
         setActiveCell({ row, col });

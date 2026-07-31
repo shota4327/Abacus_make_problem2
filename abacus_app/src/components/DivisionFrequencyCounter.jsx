@@ -1,6 +1,25 @@
+/**
+ * @file DivisionFrequencyCounter.jsx
+ * @description 割り算問題の数字別(0-9)出現回数および桁数分布テーブルを表示するコンポーネントです。
+ */
+
 import React, { useState, useMemo } from 'react';
 import './Stats.css';
 
+/**
+ * 割り算用の数字出現回数・桁数集計テーブルコンポーネント
+ * 
+ * @param {Object} props - コンポーネントProps
+ * @param {Array<Array<number>>} props.frequency - 各問題・数字ごとの出現頻度
+ * @param {Array<number>} props.totalFrequency - 全問題の数字別合計頻度
+ * @param {Array<number>} props.frequencyDiffs - 理想平均値との差分配列
+ * @param {Array<number>} props.rowDigitCounts - 各問題の桁数
+ * @param {number} props.totalRowDigits - 総桁数
+ * @param {number} [props.targetTotalDigits] - 目標総桁数
+ * @param {Function} props.updateRowDigitCount - 桁数変更・再生成関数
+ * @param {string} [props.title="出現回数"] - コンポーネントタイトル
+ * @returns {JSX.Element} 出現頻度集計テーブル
+ */
 const DivisionFrequencyCounter = ({
     frequency,
     totalFrequency,
@@ -17,6 +36,7 @@ const DivisionFrequencyCounter = ({
     noPanel = false,
     hideNoColumn = false
 }) => {
+
     const [activeSelector, setActiveSelector] = useState(null); // { rowIndex }
 
     const lengths = useMemo(() => {
