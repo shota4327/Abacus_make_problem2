@@ -65,67 +65,93 @@ export const evaluateConditions = (grid, conditions = {}, lockedCells = null) =>
         }
 
         for (let colIndex = 0; colIndex < COL_COUNT; colIndex++) {
-            const digit = row[colIndex];
-            if (digit === null || firstNonZeroIndex === -1 || colIndex < firstNonZeroIndex) continue;
-
-            // 1. 囲み文字 (X _ X パターン) のチェック
-            if (enclosedDigit != null) {
-                const target = Number(enclosedDigit);
-                if (digit === target) {
-                    const hasGapLeft = colIndex > 1 && (colIndex - 2 >= firstNonZeroIndex) && row[colIndex - 2] === target;
-                    const hasGapRight = colIndex < COL_COUNT - 2 && row[colIndex + 2] === target;
-                    if (hasGapLeft || hasGapRight) {
-                        enclosedCount++;
-                        if (enclosedCount > 1) {
-                            penaltyScore++;
-                            penaltyCells.push({ r: rowIndex, c: colIndex });
-                        }
-                    }
-                }
-            }
-
-            // 2. はさまれ文字 (A X A パターン) のチェック
-            if (sandwichedDigit != null) {
-                const target = Number(sandwichedDigit);
-                if (digit === target) {
-                    if (colIndex > 0 && (colIndex - 1 >= firstNonZeroIndex) && colIndex < COL_COUNT - 1) {
-                        if (row[colIndex - 1] !== null && row[colIndex - 1] === row[colIndex + 1]) {
-                            sandwichedCount++;
-                            if (sandwichedCount > 1) {
-                                penaltyScore++;
-                                penaltyCells.push({ r: rowIndex, c: colIndex });
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 3. 連続文字 (X X パターン) のチェック
-            if (consecutiveDigit != null) {
-                const target = Number(consecutiveDigit);
-                if (digit === target) {
-                    if (colIndex < COL_COUNT - 1 && row[colIndex + 1] === target) {
-                        consecutiveCount++;
-                        if (consecutiveCount > 1) {
-                            penaltyScore++;
-                            penaltyCells.push({ r: rowIndex, c: colIndex });
-                        }
-                    }
-                }
-            }
+            if (colIndex < firstNonZeroIndex || colIndex === 0) continue;
+            const currentDigit = row[colIndex];
+            if (currentDigit === null) continue;
 
             // 数字の遷移ペア (d1 -> d2) のカウント
-            if (colIndex < COL_COUNT - 1 && row[colIndex + 1] !== null) {
-                transitionCounts[digit][row[colIndex + 1]]++;
+            if (colIndex > 0 && colIndex - 1 >= firstNonZeroIndex) {
+                let leftDigit = row[colIndex - 1];
+                if (leftDigit !== null && currentDigit !== null) {
+                    transitionCounts[leftDigit][currentDigit]++;
+                }
+            }
+
+            // 連続文字チェック (左の数字と同じか)
+            let isConsecutive = (colIndex > 0 && colIndex - 1 >= firstNonZeroIndex && row[colIndex - 1] === currentDigit);
+            
+            // 囲み文字チェック (2つ左の数字と同じか) X _ X の右側の X で検知
+            let isEnclosed = (colIndex > 1 && colIndex - 2 >= firstNonZeroIndex && row[colIndex - 2] === currentDigit);
+            
+            // はさまれ文字チェック (両隣が同じ数字か) A X A の中央の X で検知
+            let isSandwiched = (colIndex > 0 && colIndex < COL_COUNT - 1 && colIndex - 1 >= firstNonZeroIndex && row[colIndex - 1] === row[colIndex + 1] && row[colIndex - 1] !== null);
+
+            let cellPenalty = 0;
+            let isLocked = lockedCells ? lockedCells.has(`${rowIndex},${colIndex}`) : false;
+
+            let isEnclosedPenalty = false;
+            let isSandwichedPenalty = false;
+
+            // 連続文字のペナルティ判定
+            if (isConsecutive) {
+                if (consecutiveDigit != null && currentDigit === Number(consecutiveDigit)) {
+                    consecutiveCount++;
+                    // 指定文字の場合、2回目以降はペナルティ。
+                    if (consecutiveCount > 1) cellPenalty++;
+                } else {
+                    // 指定文字以外の連続は無条件ペナルティ
+                    cellPenalty++;
+                }
+            }
+
+            // 囲み文字のペナルティ判定
+            if (isEnclosed) {
+                if (enclosedDigit != null && currentDigit === Number(enclosedDigit)) {
+                    enclosedCount++;
+                    if (enclosedCount > 1) cellPenalty++;
+                } else {
+                    isEnclosedPenalty = true;
+                }
+            }
+
+            // はさまれ文字のペナルティ判定
+            if (isSandwiched) {
+                if (sandwichedDigit != null && currentDigit === Number(sandwichedDigit)) {
+                    sandwichedCount++;
+                    if (sandwichedCount > 1) cellPenalty++;
+                } else {
+                    isSandwichedPenalty = true;
+                }
+            }
+
+            // はさまれ文字と囲み文字が重なった場合のペナルティ重複を避けるための調整
+            // A B A というパターンがある時、B(はさまれ) と 右のA(囲み) の両方でペナルティにならないよう、
+            // どちらか一方のペナルティとして加算します。
+            if (isEnclosedPenalty || isSandwichedPenalty) {
+                cellPenalty++;
+            }
+
+            // ペナルティがある場合、セル情報を記録（ロックされているセルはペナルティ解消の対象外）
+            if (cellPenalty > 0) {
+                penaltyScore += cellPenalty;
+                if (!isLocked) {
+                    penaltyCells.push({ r: rowIndex, c: colIndex });
+                }
             }
         }
     }
 
-    // 各条件が1回以上達成されているかどうかの判定スコア
+    // 各条件の達成度判定スコア（ピッタリ1回以外ならペナルティ）
     let condScore = 0;
-    if (enclosedDigit != null && enclosedCount === 0) condScore -= 1;
-    if (sandwichedDigit != null && sandwichedCount === 0) condScore -= 1;
-    if (consecutiveDigit != null && consecutiveCount === 0) condScore -= 1;
+    if (enclosedDigit != null) {
+        if (enclosedCount !== 1) condScore -= Math.abs(enclosedCount - 1) + 1;
+    }
+    if (sandwichedDigit != null) {
+        if (sandwichedCount !== 1) condScore -= Math.abs(sandwichedCount - 1) + 1;
+    }
+    if (consecutiveDigit != null) {
+        if (consecutiveCount !== 1) condScore -= Math.abs(consecutiveCount - 1) + 1;
+    }
 
     // 同じ2数字ペアの連続過多に対するペナルティ
     let transitionPenalty = 0;
@@ -295,79 +321,112 @@ export const generateProblemGrid = ({
             }
         }
 
-        // 条件設定（包み・挟み・連続桁）の初期埋め込み
-        if (enclosedDigit != null) {
-            const target = Number(enclosedDigit);
-            for (let r = 0; r < n; r++) {
-                const len = rowLengths[r];
-                if (len >= 3) {
-                    const msd = msdIndices[r];
-                    const availableCols = [];
-                    for (let c = msd; c <= COL_COUNT - 3; c++) {
-                        if (!lockedCells.has(`${r},${c}`) && !lockedCells.has(`${r},${c + 2}`)) {
-                            availableCols.push(c);
-                        }
-                    }
-                    if (availableCols.length > 0) {
-                        const startC = availableCols[Math.floor(Math.random() * availableCols.length)];
-                        nextGrid[r][startC] = target;
-                        nextGrid[r][startC + 2] = target;
-                        lockedCells.add(`${r},${startC}`);
-                        lockedCells.add(`${r},${startC + 2}`);
-                        break;
-                    }
-                }
-            }
-        }
+        // 近接チェック関数（強制配置するセルの上下左右に同じ数字がないか確認）
+        const checkAdjacency = (r, c, digit) => {
+            const up = r > 0 ? nextGrid[r - 1][c] : null;
+            const down = r < n - 1 ? nextGrid[r + 1][c] : null;
+            const left = c > 0 ? nextGrid[r][c - 1] : null;
+            const right = c < COL_COUNT - 1 ? nextGrid[r][c + 1] : null;
+            return up === digit || down === digit || left === digit || right === digit;
+        };
 
-        if (sandwichedDigit != null) {
-            const target = Number(sandwichedDigit);
-            for (let r = 0; r < n; r++) {
-                const len = rowLengths[r];
-                if (len >= 3) {
-                    const msd = msdIndices[r];
-                    const availableCols = [];
-                    for (let c = msd + 1; c <= COL_COUNT - 2; c++) {
-                        if (!lockedCells.has(`${r},${c - 1}`) && !lockedCells.has(`${r},${c}`) && !lockedCells.has(`${r},${c + 1}`)) {
-                            availableCols.push(c);
-                        }
-                    }
-                    if (availableCols.length > 0) {
-                        const centerC = availableCols[Math.floor(Math.random() * availableCols.length)];
-                        const outerDigit = Math.floor(Math.random() * 9) + 1;
-                        nextGrid[r][centerC - 1] = outerDigit;
-                        nextGrid[r][centerC] = target;
-                        nextGrid[r][centerC + 1] = outerDigit;
-                        lockedCells.add(`${r},${centerC - 1}`);
-                        lockedCells.add(`${r},${centerC}`);
-                        lockedCells.add(`${r},${centerC + 1}`);
-                        break;
-                    }
-                }
-            }
-        }
-
+        // 連続文字 (22など)
         if (consecutiveDigit != null) {
-            const target = Number(consecutiveDigit);
-            for (let r = 0; r < n; r++) {
-                const len = rowLengths[r];
-                if (len >= 2) {
-                    const msd = msdIndices[r];
-                    const availableCols = [];
-                    for (let c = msd; c <= COL_COUNT - 2; c++) {
-                        if (!lockedCells.has(`${r},${c}`) && !lockedCells.has(`${r},${c + 1}`)) {
-                            availableCols.push(c);
-                        }
-                    }
-                    if (availableCols.length > 0) {
-                        const startC = availableCols[Math.floor(Math.random() * availableCols.length)];
-                        nextGrid[r][startC] = target;
-                        nextGrid[r][startC + 1] = target;
-                        lockedCells.add(`${r},${startC}`);
-                        lockedCells.add(`${r},${startC + 1}`);
-                        break;
-                    }
+            let r, c;
+            for (let attempt = 0; attempt < 100; attempt++) {
+                r = Math.floor(Math.random() * n);
+                let firstValidIdx = COL_COUNT - rowLengths[r];
+                c = Math.floor(Math.random() * (COL_COUNT - 1 - firstValidIdx)) + firstValidIdx;
+                if (c >= COL_COUNT - 1) continue;
+                if (lockedCells.has(`${r},${c}`) || lockedCells.has(`${r},${c + 1}`)) continue;
+                
+                let target = Number(consecutiveDigit);
+                if (checkAdjacency(r, c, target) || checkAdjacency(r, c + 1, target)) continue;
+                
+                nextGrid[r][c] = target;
+                nextGrid[r][c + 1] = target;
+                lockedCells.add(`${r},${c}`);
+                lockedCells.add(`${r},${c + 1}`);
+                break;
+            }
+        }
+
+        // はさまれ文字と囲み文字の配置
+        if (enclosedDigit != null && sandwichedDigit != null) {
+            // 同時指定の場合は、統合して配置（例: 9 3 9）
+            let r, c;
+            for (let attempt = 0; attempt < 100; attempt++) {
+                r = Math.floor(Math.random() * n);
+                let firstValidIdx = COL_COUNT - rowLengths[r];
+                c = Math.floor(Math.random() * (COL_COUNT - 2 - firstValidIdx)) + firstValidIdx;
+                if (c >= COL_COUNT - 2) continue;
+                if (lockedCells.has(`${r},${c}`) || lockedCells.has(`${r},${c + 1}`) || lockedCells.has(`${r},${c + 2}`)) continue;
+                
+                let encTarget = Number(enclosedDigit);
+                let sanTarget = Number(sandwichedDigit);
+                
+                if (checkAdjacency(r, c, encTarget) || checkAdjacency(r, c + 2, encTarget) || checkAdjacency(r, c + 1, sanTarget)) continue;
+                if (encTarget === sanTarget) continue; // 同じ数字が指定された場合は統合不可
+                
+                nextGrid[r][c] = encTarget;
+                nextGrid[r][c + 1] = sanTarget;
+                nextGrid[r][c + 2] = encTarget;
+                
+                lockedCells.add(`${r},${c}`);
+                lockedCells.add(`${r},${c + 1}`);
+                lockedCells.add(`${r},${c + 2}`);
+                break;
+            }
+        } else if (enclosedDigit != null) {
+            // 囲み文字単独
+            let r, c;
+            for (let attempt = 0; attempt < 100; attempt++) {
+                r = Math.floor(Math.random() * n);
+                let firstValidIdx = COL_COUNT - rowLengths[r];
+                c = Math.floor(Math.random() * (COL_COUNT - 2 - firstValidIdx)) + firstValidIdx;
+                if (c >= COL_COUNT - 2) continue;
+                if (lockedCells.has(`${r},${c}`) || lockedCells.has(`${r},${c + 1}`) || lockedCells.has(`${r},${c + 2}`)) continue;
+                
+                let target = Number(enclosedDigit);
+                if (checkAdjacency(r, c, target) || checkAdjacency(r, c + 2, target)) continue;
+                
+                nextGrid[r][c] = target;
+                nextGrid[r][c + 2] = target;
+                let center = nextGrid[r][c + 1];
+                if (center === Number(enclosedDigit) || center === null) {
+                    center = (Number(enclosedDigit) + 1) % 10;
+                    if (center === 0) center = 1;
+                    nextGrid[r][c + 1] = center;
                 }
+                lockedCells.add(`${r},${c}`);
+                lockedCells.add(`${r},${c + 1}`);
+                lockedCells.add(`${r},${c + 2}`);
+                break;
+            }
+        } else if (sandwichedDigit != null) {
+            // はさまれ文字単独
+            let r, c;
+            for (let attempt = 0; attempt < 100; attempt++) {
+                r = Math.floor(Math.random() * n);
+                let firstValidIdx = COL_COUNT - rowLengths[r];
+                c = Math.floor(Math.random() * (COL_COUNT - 2 - firstValidIdx)) + firstValidIdx;
+                if (c >= COL_COUNT - 2) continue;
+                if (lockedCells.has(`${r},${c}`) || lockedCells.has(`${r},${c + 1}`) || lockedCells.has(`${r},${c + 2}`)) continue;
+                
+                let target = Number(sandwichedDigit);
+                if (checkAdjacency(r, c + 1, target)) continue;
+
+                let side = (target + 1) % 10;
+                if (side === 0) side = 1;
+                if (checkAdjacency(r, c, side) || checkAdjacency(r, c + 2, side)) continue;
+
+                nextGrid[r][c + 1] = target;
+                nextGrid[r][c] = side;
+                nextGrid[r][c + 2] = side;
+                lockedCells.add(`${r},${c}`);
+                lockedCells.add(`${r},${c + 1}`);
+                lockedCells.add(`${r},${c + 2}`);
+                break;
             }
         }
 
@@ -430,12 +489,18 @@ export const generateProblemGrid = ({
             let bestCand = null;
             let maxScore = -Infinity;
 
+            // 候補をシャッフルして探索の偏りをなくす（局所解への収束を防ぐ）
+            candidates.sort(() => Math.random() - 0.5);
+
+            const currentEval = evaluateConditions(newGrid, conditions, lockedCells);
+
             for (const cand of candidates) {
                 const original = newGrid[cand.r][cand.c];
                 newGrid[cand.r][cand.c] = maxUnderDigit;
 
                 const newEval = evaluateConditions(newGrid, conditions, lockedCells);
-                const score = (newEval.condScore) * 1000 - newEval.penaltyScore;
+                // まずは condScore（条件達成度）を優先、次に penaltyScore の削減
+                const score = (newEval.condScore - currentEval.condScore) * 1000 + (currentEval.penaltyScore - newEval.penaltyScore);
 
                 if (score > maxScore) {
                     maxScore = score;
