@@ -143,18 +143,20 @@ export const useProblemState = (initialData = {}) => {
      */
     const generateRandomGrid = useCallback(() => {
         setIsGenerating(true);
-        setTimeout(() => {
-            const { grid: newGrid, isMinusRows: newMinusRows } = generateProblemGrid({
-                rowCount, minDigit, maxDigit, targetTotalDigits, hasMinus, complementStatus,
-                conditions: {
-                    firstRowFirstDigit, firstRowLastDigit, lastRowFirstDigit, lastRowLastDigit, answerFirstDigit, answerLastDigit,
-                    plusOneDigit, minusOneDigit, enclosedDigit, sandwichedDigit, consecutiveDigit
-                }
-            });
-            setGrid(newGrid);
-            setIsMinusRows(newMinusRows);
-            setIsGenerating(false);
-        }, 50); // UIローディングアニメーション表示用のわずかな遅延
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                const { grid: newGrid, isMinusRows: newMinusRows } = generateProblemGrid({
+                    rowCount, minDigit, maxDigit, targetTotalDigits, hasMinus, complementStatus,
+                    conditions: {
+                        firstRowFirstDigit, firstRowLastDigit, lastRowFirstDigit, lastRowLastDigit, answerFirstDigit, answerLastDigit,
+                        plusOneDigit, minusOneDigit, enclosedDigit, sandwichedDigit, consecutiveDigit
+                    }
+                });
+                setGrid(newGrid);
+                setIsMinusRows(newMinusRows);
+                setIsGenerating(false);
+            }, 0);
+        });
     }, [rowCount, minDigit, maxDigit, targetTotalDigits, hasMinus, complementStatus,
         firstRowFirstDigit, firstRowLastDigit, lastRowFirstDigit, lastRowLastDigit, answerFirstDigit, answerLastDigit,
         plusOneDigit, minusOneDigit, enclosedDigit, sandwichedDigit, consecutiveDigit

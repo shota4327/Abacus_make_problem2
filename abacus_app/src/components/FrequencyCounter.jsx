@@ -67,7 +67,7 @@ const FrequencyCounter = ({
                         </tr>
                     </thead>
                     <tbody>
-                        {frequency.map((rowFreq, rowIndex) => (
+                        {frequency?.map((rowFreq, rowIndex) => (
                             <tr key={rowIndex}>
                                 <td className="row-label">{rowIndex + 1}</td>
                                 {rowFreq.map((count, num) => (

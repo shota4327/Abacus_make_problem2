@@ -42,9 +42,7 @@ const DivisionFrequencyCounter = ({
     const lengths = useMemo(() => {
         const min = Math.min(minDigit || 5, maxDigit || 12);
         const max = Math.max(minDigit || 5, maxDigit || 12);
-        const res = [];
-        for (let i = min; i <= max; i++) res.push(i);
-        return res;
+        return Array.from({ length: max - min + 1 }, (_, i) => min + i);
     }, [minDigit, maxDigit]);
 
     const handleLengthSelect = (rowIndex, length) => {

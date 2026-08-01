@@ -9,6 +9,19 @@ import { generateProblemGrid } from '../utils/problemGenerator';
 import './ConditionManager.css';
 
 /**
+ * 配列をFisher-Yatesアルゴリズムでインプレースシャッフルする
+ * @param {Array} arr - シャッフル対象の配列
+ * @returns {Array} シャッフルされた同じ配列（破壊的操作）
+ */
+const shuffleInPlace = (arr) => {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+};
+
+/**
  * 全見取り算問題(10問分)の条件一括表示・編集・自動生成を行うコンポーネント
  * 
  * @param {Object} props
@@ -128,10 +141,7 @@ const ConditionManager = ({ problems, onUpdate }) => {
                 ...Array(count130).fill(130)
             ];
 
-            for (let i = values.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [values[i], values[j]] = [values[j], values[i]];
-            }
+            shuffleInPlace(values);
 
             newProblems = newProblems.map((p, i) => {
                 let tt = values[i];
@@ -151,10 +161,7 @@ const ConditionManager = ({ problems, onUpdate }) => {
                     availableFor20.push(i);
                 }
             }
-            for (let i = availableFor20.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [availableFor20[i], availableFor20[j]] = [availableFor20[j], availableFor20[i]];
-            }
+            shuffleInPlace(availableFor20);
             let rowCount20Indices = availableFor20.slice(0, num20);
 
             newProblems = newProblems.map((p, i) => {
@@ -183,10 +190,7 @@ const ConditionManager = ({ problems, onUpdate }) => {
                     }
                 }
             }
-            for (let i = availableForExact.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [availableForExact[i], availableForExact[j]] = [availableForExact[j], availableForExact[i]];
-            }
+            shuffleInPlace(availableForExact);
             let exactIndex = availableForExact.length > 0 ? availableForExact[0] : -1;
 
             newProblems = newProblems.map((p, i) => {
@@ -224,10 +228,7 @@ const ConditionManager = ({ problems, onUpdate }) => {
 
             for (let attempt = 0; attempt < 100; attempt++) {
                 const current = [...baseValues];
-                for (let i = current.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [current[i], current[j]] = [current[j], current[i]];
-                }
+                shuffleInPlace(current);
 
                 let conflicts = 0;
                 if (excludeKeys.length > 0) {
@@ -262,16 +263,10 @@ const ConditionManager = ({ problems, onUpdate }) => {
             const extraVar = baseMin[Math.floor(Math.random() * baseMin.length)];
             const minValues = [...baseMin, extraVar]; 
 
-            for (let i = minValues.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [minValues[i], minValues[j]] = [minValues[j], minValues[i]];
-            }
+            shuffleInPlace(minValues);
 
             const maxValues = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-            for (let i = maxValues.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [maxValues[i], maxValues[j]] = [maxValues[j], maxValues[i]];
-            }
+            shuffleInPlace(maxValues);
 
             newProblems = newProblems.map((p, i) => ({
                 ...p,
@@ -281,10 +276,7 @@ const ConditionManager = ({ problems, onUpdate }) => {
         }
         else if (rowConfig.key === 'hasMinus' || rowConfig.key === 'complementStatus') {
             const indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-            for (let i = indices.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [indices[i], indices[j]] = [indices[j], indices[i]];
-            }
+            shuffleInPlace(indices);
             const minusIndices = indices.slice(0, 3); // 3問
             const complementIndex = minusIndices[Math.floor(Math.random() * minusIndices.length)]; // その中の1問
 
@@ -337,16 +329,10 @@ const ConditionManager = ({ problems, onUpdate }) => {
                 ...Array(count140).fill(140),
                 ...Array(count130).fill(130)
             ];
-            for (let i = ttValues.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [ttValues[i], ttValues[j]] = [ttValues[j], ttValues[i]];
-            }
+            shuffleInPlace(ttValues);
 
             let indices = [0,1,2,3,4,5,6,7,8,9];
-            for (let i = indices.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [indices[i], indices[j]] = [indices[j], indices[i]];
-            }
+            shuffleInPlace(indices);
             let rowCount20Indices = indices.slice(0, num20);
             let exactIndex = Math.floor(Math.random() * 10);
 

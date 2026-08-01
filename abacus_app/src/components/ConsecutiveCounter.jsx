@@ -45,7 +45,7 @@ const ConsecutiveCounter = ({ consecutive }) => {
                                     <tr key={`r-${d2}`}>
                                         <th className="row-label">{d2}</th>
                                         {digits.map(d1 => {
-                                            const count = consecutive[d1][d2];
+                                            const count = consecutive?.[d1]?.[d2] ?? 0;
                                             return (
                                                 <td
                                                     key={`${d1}-${d2}`}

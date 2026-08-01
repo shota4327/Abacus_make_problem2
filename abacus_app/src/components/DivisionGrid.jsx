@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useRef } from 'react';
+import { MAX_DIVIDEND_LENGTH, MAX_DIVISOR_LENGTH, MAX_ANSWER_LENGTH } from '../constants/initialState';
 import './ProblemGrid.css';
 import './Multiplication.css';
 
@@ -125,9 +126,9 @@ const DivisionGrid = ({ problems, updateDigit, toggleDecimal, generateRandomProb
                 const strDvr = cols[1];
                 const strAns = cols.length > 2 ? cols[2] : "";
 
-                const parsedDiv = parseNumberToDigits(strDiv, 14);
-                const parsedDvr = parseNumberToDigits(strDvr, 7);
-                const parsedAns = parseNumberToDigits(strAns, 7);
+                const parsedDiv = parseNumberToDigits(strDiv, MAX_DIVIDEND_LENGTH);
+                const parsedDvr = parseNumberToDigits(strDvr, MAX_DIVISOR_LENGTH);
+                const parsedAns = parseNumberToDigits(strAns, MAX_ANSWER_LENGTH);
 
                 newProblems.push({
                     dividend: parsedDiv.digits,
@@ -142,11 +143,11 @@ const DivisionGrid = ({ problems, updateDigit, toggleDecimal, generateRandomProb
 
             while (newProblems.length < 10) {
                 newProblems.push({
-                    dividend: Array(14).fill(null),
+                    dividend: Array(MAX_DIVIDEND_LENGTH).fill(null),
                     decimalDividend: null,
-                    divisor: Array(7).fill(null),
+                    divisor: Array(MAX_DIVISOR_LENGTH).fill(null),
                     decimalDivisor: null,
-                    answer: Array(7).fill(null),
+                    answer: Array(MAX_ANSWER_LENGTH).fill(null),
                     decimalAnswer: null
                 });
             }

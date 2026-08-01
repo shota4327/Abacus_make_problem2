@@ -600,6 +600,9 @@ const _generateDivisionProblems_internal = () => {
         // 被除数 (Dividend: 割られる数) 12桁右詰め配置
         const divStr = conf.Dividend.toString();
         const divLen = divStr.length;
+        if (divLen > 12) {
+            console.error(`被除数が12桁を超えています（${divLen}桁: ${conf.Dividend}）。問題が不正になる可能性があります。`);
+        }
         const divOffset = 12 - divLen;
         for (let j = 0; j < divLen; j++) {
             if (divOffset + j >= 0 && divOffset + j < 12) {

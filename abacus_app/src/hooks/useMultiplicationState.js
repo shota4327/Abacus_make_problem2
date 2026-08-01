@@ -84,11 +84,13 @@ export const useMultiplicationState = () => {
      */
     const generateRandomProblems = useCallback(() => {
         setIsGenerating(true);
-        setTimeout(() => {
-            const newProblems = generateMultiplicationProblems();
-            setProblems(newProblems);
-            setIsGenerating(false);
-        }, 10);
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                const newProblems = generateMultiplicationProblems();
+                setProblems(newProblems);
+                setIsGenerating(false);
+            }, 0);
+        });
     }, []);
 
     /** 10問分の全問題の統計情報（数字出現頻度、積の桁数、難易度等）を自動計算 */

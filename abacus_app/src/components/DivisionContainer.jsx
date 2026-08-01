@@ -11,6 +11,9 @@ import ConsecutiveCounter from './ConsecutiveCounter';
 import { useDivisionState } from '../hooks/useDivisionState';
 import './Multiplication.css';
 
+/** 全体出現頻度表の読み取り専用ハンドラー（noop） */
+const noop = () => { };
+
 /**
  * 割り算問題作成画面コンテナコンポーネント
  * 
@@ -55,9 +58,6 @@ const DivisionContainer = () => {
     const handleUpdateAnswer = (rowIndex, length) => {
         regenerateRow(rowIndex, 'answer', length);
     };
-
-    /** 全体出現頻度表の読み取り専用ハンドラー（noop） */
-    const noop = () => { };
 
     return (
         <div className="multiplication-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '10px' }}>

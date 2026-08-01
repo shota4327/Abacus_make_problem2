@@ -164,6 +164,9 @@ const ProblemGrid = ({
 
                         // Convert absVal to digit array (right aligned in 13 cols)
                         const str = absVal.toString();
+                        if (str.length > 13) {
+                            console.warn(`CSVの値が13桁を超えています（${str.length}桁）。先頭の桁が切り捨てられます。`);
+                        }
                         const rowArr = Array(13).fill(null);
                         const offset = 13 - str.length;
                         for (let k = 0; k < str.length; k++) {
@@ -203,7 +206,11 @@ const ProblemGrid = ({
             newState.rowCount = newGridRows.length; // From parse count
 
             // Apply conditions
-            const safeInt = (val) => (val && val !== '') ? parseInt(val, 10) : null;
+            const safeInt = (val) => {
+                if (!val || val === '') return null;
+                const parsed = parseInt(val, 10);
+                return Number.isNaN(parsed) ? null : parsed;
+            };
             const safeBool = (val) => val === '1';
 
             if (conditionsMap['最低桁数']) newState.minDigit = safeInt(conditionsMap['最低桁数']);

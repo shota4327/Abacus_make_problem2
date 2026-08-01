@@ -3,75 +3,11 @@
  * @description 掛け算問題(10問)の各項（被乗数・乗数）および全体の数字出現頻度、有効桁数、連続桁マトリクス等の統計情報を計算する集計・検証ユーティリティです。
  */
 
-/**
- * 渡された桁配列の集合（dataSets）から、各数字(0-9)の出現回数を各行（各問題）ごとに計算します。
- * 数値の先頭に存在するゼロ（leading zeros）はカウント対象から除外します。
- * 
- * @param {Array<Array<number|null>>} dataSets - 各問題の桁数値配列のコレクション
- * @returns {Array<Array<number>>} [行インデックス][数字(0-9)] -> 出現回数 の2次元配列
- */
-const calculateFrequency = (dataSets) => {
-    return dataSets.map(row => {
-        const counts = Array(10).fill(0);
-        let foundNonZero = false;
-        row.forEach(digit => {
-            if (digit !== null && digit !== undefined && digit !== '') {
-                const num = Number(digit);
-                // 先頭のゼロはスキップ
-                if (num === 0 && !foundNonZero) {
-                    return;
-                }
-                if (num !== 0) {
-                    foundNonZero = true;
-                }
-                counts[num]++;
-            }
-        });
-        return counts;
-    });
-};
+// 共通バリデーションユーティリティのインポート
+import { calculateFrequency, calculateTotalFrequency, calculateRowDigitCounts } from './validatorUtils.js';
 
-/**
- * 各行ごとの出現回数テーブルを集計し、全体の数字(0-9)ごとの通算出現回数を算出します。
- * 
- * @param {Array<Array<number>>} freqTable - calculateFrequencyで算出された行別出現回数テーブル
- * @returns {Array<number>} 数字(0-9)ごとの合計出現回数配列
- */
-const calculateTotalFrequency = (freqTable) => {
-    const total = Array(10).fill(0);
-    freqTable.forEach(rowCounts => {
-        rowCounts.forEach((count, digit) => {
-            total[digit] += count;
-        });
-    });
-    return total;
-};
-
-/**
- * 各行ごとの実際の有効桁数（先頭ゼロを除く入力数字の個数）を計算します。
- * 
- * @param {Array<Array<number|null>>} dataSets - 桁数値配列のコレクション
- * @returns {Array<number>} 各行の有効桁数配列
- */
-const calculateRowDigitCounts = (dataSets) => {
-    return dataSets.map(row => {
-        let count = 0;
-        let foundNonZero = false;
-        row.forEach(digit => {
-            if (digit !== null && digit !== undefined && digit !== '') {
-                const num = Number(digit);
-                if (num === 0 && !foundNonZero) {
-                    return; // 先頭のゼロをスキップ
-                }
-                if (num !== 0) {
-                    foundNonZero = true;
-                }
-                count++;
-            }
-        });
-        return count;
-    });
-};
+// 他ファイルからの参照用に再エクスポート
+export { calculateFrequency, calculateTotalFrequency, calculateRowDigitCounts };
 
 /**
  * 10問分の掛け算問題オブジェクト配列から、左辺・右辺および全体の詳細統計情報を計算します。

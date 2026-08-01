@@ -3,6 +3,11 @@
  * @description アプリケーション全体で利用する盤面サイズ定数および各種問題（見取り算・掛け算・割り算）の初期状態生成関数を定義します。
  */
 
+/** 割り算のグリッド桁数定数 */
+export const MAX_DIVIDEND_LENGTH = 12;
+export const MAX_DIVISOR_LENGTH = 7;
+export const MAX_ANSWER_LENGTH = 7;
+
 /** 見取り算のグリッド行数（口数 maximum） */
 export const ROW_COUNT = 20;
 
@@ -100,9 +105,9 @@ export const createInitialMultiplicationState = () => ({
  * @returns {number|null} return.decimalAnswer - 商（答え）の小数点位置（0-6）
  */
 export const createInitialDivisionState = () => ({
-    dividend: Array(12).fill(null), // 割られる数（最大12桁、右詰め）
-    divisor: Array(7).fill(null),   // 割る数（最大7桁、右詰め）
-    answer: Array(7).fill(null),    // 答え（最大7桁、右詰め）
+    dividend: Array(MAX_DIVIDEND_LENGTH).fill(null), // 割られる数（最大12桁、右詰め）
+    divisor: Array(MAX_DIVISOR_LENGTH).fill(null),   // 割る数（最大7桁、右詰め）
+    answer: Array(MAX_ANSWER_LENGTH).fill(null),    // 答え（最大7桁、右詰め）
     decimalDividend: null,          // 割られる数の小数点のインデックス（0-11）
     decimalDivisor: null,           // 割る数の小数点のインデックス（0-6）
     decimalAnswer: null             // 答えの小数点のインデックス（0-6）

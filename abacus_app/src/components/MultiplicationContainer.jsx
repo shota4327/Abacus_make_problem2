@@ -10,6 +10,9 @@ import ConsecutiveCounter from './ConsecutiveCounter';
 import { useMultiplicationState } from '../hooks/useMultiplicationState';
 import './Multiplication.css';
 
+// No-op for "All" counter if needed, or null
+const noop = () => { };
+
 /**
  * 掛け算問題作成画面全体コンテナコンポーネント
  * 
@@ -54,9 +57,6 @@ const MultiplicationContainer = () => {
     const handleUpdateRight = (rowIndex, length) => {
         regenerateRow(rowIndex, 'right', length);
     };
-
-    // No-op for "All" counter if needed, or null
-    const noop = () => { };
 
     return (
         <div className="multiplication-container">

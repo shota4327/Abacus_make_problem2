@@ -3,7 +3,7 @@
  * @description 割り算問題(10問分)の状態管理、桁/小数点編集、Web Workerを用いた非同期一括生成、および統計計算機能を提供するカスタムフックです。
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { regenerateDivisionRow } from '../utils/divisionGenerator';
 import { calculateDivisionStats } from '../utils/divisionValidator';
 import { createInitialDivisionState } from '../constants/initialState';
@@ -21,6 +21,18 @@ export const useDivisionState = () => {
     );
     /** バックグラウンドWeb Workerによる自動生成中のローディング状態 */
     const [isGenerating, setIsGenerating] = useState(false);
+    /** 現在のWorkerの参照を保持（アンマウント時およびタイムアウト時のクリーンアップ用） */
+    const workerRef = useRef(null);
+
+    // コンポーネントのアンマウント時にWorkerを停止
+    useEffect(() => {
+        return () => {
+            if (workerRef.current) {
+                workerRef.current.terminate();
+                workerRef.current = null;
+            }
+        };
+    }, []);
 
     /**
      * 特定の問題の指定フィールド（dividend:割られる数 / divisor:割る数 / answer:商）の特定桁の数字を変更します。
@@ -89,11 +101,28 @@ export const useDivisionState = () => {
         if (isGenerating) return; // 二重実行防止
         setIsGenerating(true);
         
+        // 前回のWorkerが残っていれば停止
+        if (workerRef.current) {
+            workerRef.current.terminate();
+        }
+
         // インラインWeb Workerをインスタンス化
         const worker = new DivisionWorker();
+        workerRef.current = worker;
         
+        // 30秒でタイムアウト
+        const timeoutId = setTimeout(() => {
+            console.warn('割り算問題の生成がタイムアウトしました（30秒）');
+            if (workerRef.current) {
+                workerRef.current.terminate();
+                workerRef.current = null;
+            }
+            setIsGenerating(false);
+        }, 30000);
+
         // メッセージ受信（生成完了・エラー）のハンドラ設定
         worker.onmessage = (e) => {
+            clearTimeout(timeoutId);
             if (e.data.type === 'SUCCESS') {
                 setProblems(e.data.payload);
             } else if (e.data.type === 'ERROR') {
@@ -101,12 +130,15 @@ export const useDivisionState = () => {
             }
             setIsGenerating(false);
             worker.terminate();
+            workerRef.current = null;
         };
 
         worker.onerror = (err) => {
+            clearTimeout(timeoutId);
             console.error('Worker failed:', err);
             setIsGenerating(false);
             worker.terminate();
+            workerRef.current = null;
         };
 
         // Workerへ生成リクエスト送信

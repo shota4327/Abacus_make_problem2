@@ -12,6 +12,15 @@ import { generateDivisionProblems } from '../utils/divisionGenerator.js';
  * @param {Object} e.data - イベントデータ
  * @param {string} e.data.type - リクエストタイプ ('GENERATE')
  */
+self.onerror = function(error) {
+    self.postMessage({
+        type: 'ERROR',
+        payload: {
+            message: typeof error === 'string' ? error : (error?.message || 'Worker内で不明なエラーが発生しました'),
+            stack: error?.stack || null
+        }
+    });
+};
 self.onmessage = function(e) {
     if (e.data.type === 'GENERATE') {
         try {
@@ -24,10 +33,13 @@ self.onmessage = function(e) {
                 payload: newProblems
             });
         } catch (error) {
-            // 例外発生時はエラーメッセージをメインスレッドへ送信
+            // 例外発生時はエラーメッセージとスタックトレースをメインスレッドへ送信
             self.postMessage({
                 type: 'ERROR',
-                payload: error.message || 'Unknown error occurred in divisionWorker'
+                payload: {
+                    message: error.message || 'Unknown error occurred in divisionWorker',
+                    stack: error.stack
+                }
             });
         }
     }
