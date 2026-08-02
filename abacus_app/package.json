@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vite-node testRunner.js"
+    "test": "vite-node testRunner.js",
+    "verify:1000": "vite-node ../verify_1000_runs.js"
   },
   "dependencies": {
     "react": "^19.2.0",
