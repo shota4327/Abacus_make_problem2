@@ -206,7 +206,8 @@ const DivisionGrid = ({ problems, updateDigit, toggleDecimal, generateRandomProb
         const prob = problems[problemIndex];
         const showDecimal = field === 'divisor' && colIndex < 6;
         const decimalKey = 'decimal' + field.charAt(0).toUpperCase() + field.slice(1);
-        const isDecimalActive = prob[decimalKey] === colIndex;
+        const decimalPos = prob[decimalKey];
+        const isDecimalActive = decimalPos === colIndex;
 
         const digits = prob[field];
         const isHighlighted = field !== 'dividend' && shouldHighlight(digits, colIndex);
@@ -214,6 +215,21 @@ const DivisionGrid = ({ problems, updateDigit, toggleDecimal, generateRandomProb
         let roundClass = '';
         if (field === 'answer' && prob.roundType) {
             roundClass = `round-${prob.roundType}`;
+        }
+
+        // 表示用数字の補完（1未満の小数でデータ上nullになっている頭の0を表示する）
+        let displayDigit = digit;
+        if (field === 'divisor' && decimalPos !== null && digit === null) {
+            let firstDigitPos = 7;
+            for (let i = 0; i < 7; i++) {
+                if (digits[i] !== null) {
+                    firstDigitPos = i;
+                    break;
+                }
+            }
+            if (colIndex >= decimalPos && colIndex < firstDigitPos) {
+                displayDigit = 0;
+            }
         }
 
         return (
@@ -225,7 +241,7 @@ const DivisionGrid = ({ problems, updateDigit, toggleDecimal, generateRandomProb
                         setActiveCell({ problemIndex, field, colIndex });
                     }}
                 >
-                    {digit !== null ? digit : ''}
+                    {displayDigit !== null ? displayDigit : ''}
                 </button>
                 {isActive && (
                     <>
