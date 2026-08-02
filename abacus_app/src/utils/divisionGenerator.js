@@ -493,6 +493,9 @@ const _generateDivisionProblems_internal = () => {
     let upCount = 0;
     let downCount = 0;
 
+    // 【追加】小数点位置の重複判定用の履歴
+    const usedDecimals = [];
+
     // 1未満の小数行の設定
     rowConfigs[lessThanOneRow] = {
         isDecimal: true,
@@ -505,6 +508,12 @@ const _generateDivisionProblems_internal = () => {
     };
     if (lessThanOneConfig.type === 'up') upCount++;
     else if (lessThanOneConfig.type === 'down') downCount++;
+
+    // 1未満の小数の特徴を履歴に登録（整数部: 0桁, 小数部: len + zc桁）
+    usedDecimals.push({
+        intLen: 0,
+        fracLen: rowsB[lessThanOneRow].len + lessThanOneConfig.zc
+    });
 
     // O(1) 区間算出ユーティリティ（通常小数用）
     const getExactDividendForDecimal = (A, B_val, preferredType = 'any') => {
@@ -535,7 +544,43 @@ const _generateDivisionProblems_internal = () => {
     for (const rIdx of normalDecimalRows) {
         const A = parseInt(rowsA[rIdx].digits.join(''), 10);
         const B_str = rowsB[rIdx].digits.join('');
-        const decIdx = Math.floor(Math.random() * (rowsB[rIdx].len - 1));
+        const lenB = rowsB[rIdx].len;
+        
+        // decIdx をスコアベースで決定（重複の最小化）
+        let bestDecIdx = -1;
+        let bestScore = Infinity;
+        const candidatesIdx = [];
+        for (let i = 0; i < lenB - 1; i++) candidatesIdx.push(i);
+        
+        // 候補のシャッフル（同スコア時にばらけるように）
+        for (let i = candidatesIdx.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [candidatesIdx[i], candidatesIdx[j]] = [candidatesIdx[j], candidatesIdx[i]];
+        }
+
+        for (const cIdx of candidatesIdx) {
+            const intLen = cIdx + 1;
+            const fracLen = lenB - intLen;
+            let score = 0;
+            // A案ベース: いずれかが一致していればペナルティ
+            for (const used of usedDecimals) {
+                if (used.intLen === intLen && used.fracLen === fracLen) {
+                    score += 100; // 形状完全一致は重いペナルティ
+                } else if (used.intLen === intLen) {
+                    score += 10;  // 整数部一致ペナルティ
+                } else if (used.fracLen === fracLen) {
+                    score += 10;  // 小数部一致ペナルティ
+                }
+            }
+            if (score < bestScore) {
+                bestScore = score;
+                bestDecIdx = cIdx;
+            }
+        }
+        
+        const decIdx = bestDecIdx;
+        usedDecimals.push({ intLen: decIdx + 1, fracLen: lenB - (decIdx + 1) });
+
         const B_val = parseFloat(B_str.slice(0, decIdx + 1) + "." + B_str.slice(decIdx + 1));
 
         let preferredType = 'any';
