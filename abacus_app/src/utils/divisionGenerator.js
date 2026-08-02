@@ -485,6 +485,13 @@ const _generateDivisionProblems_internal = () => {
 
     const remainingDecimalRows = availableRowsForDecimal.filter(r => r !== lessThanOneRow);
     if (remainingDecimalRows.length < 3) return null;
+    
+    // シャッフルを追加し、通常小数行が前半に偏るのを防ぐ
+    for (let i = remainingDecimalRows.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [remainingDecimalRows[i], remainingDecimalRows[j]] = [remainingDecimalRows[j], remainingDecimalRows[i]];
+    }
+    
     const normalDecimalRows = remainingDecimalRows.slice(0, 3);
     const decimalRows = [lessThanOneRow, ...normalDecimalRows];
     const intRows = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(r => !decimalRows.includes(r));
