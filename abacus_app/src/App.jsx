@@ -81,19 +81,19 @@ function App() {
       <Sidebar currentTab={currentTab} onTabChange={setCurrentTab} />
       
       {/* メインコンテンツ表示エリア */}
-      <div className={`content-area ${currentTab === 'manager' ? 'manager-mode' : ''}`}>
+      <div className={`content-area ${typeof currentTab === 'number' ? '' : 'non-grid-mode'}`}>
         {/* 掛け算タブ */}
-        <div style={{ display: currentTab === 'multiplication' ? 'block' : 'none', height: '100%' }}>
+        <div className="full-width-tab" style={{ display: currentTab === 'multiplication' ? 'block' : 'none', height: '100%' }}>
           <MultiplicationContainer />
         </div>
         
         {/* 割り算タブ */}
-        <div style={{ display: currentTab === 'division' ? 'block' : 'none', height: '100%' }}>
+        <div className="full-width-tab" style={{ display: currentTab === 'division' ? 'block' : 'none', height: '100%' }}>
           <DivisionContainer />
         </div>
         
         {/* 条件一括管理マネージャータブ */}
-        <div style={{ display: currentTab === 'manager' ? 'block' : 'none', height: '100%' }}>
+        <div className="full-width-tab" style={{ display: currentTab === 'manager' ? 'block' : 'none', height: '100%' }}>
           <ConditionManager problems={problems} onUpdate={handleUpdate} />
         </div>
         

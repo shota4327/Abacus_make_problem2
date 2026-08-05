@@ -32,9 +32,16 @@ body {
   overflow: hidden;
 }
 
-.content-area.manager-mode {
+.content-area.non-grid-mode {
   display: block;
-  overflow: hidden;
+  overflow: auto;
+}
+
+.full-width-tab {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .panel {

@@ -5,6 +5,8 @@
     height: 100%;
     /* Fill content-area */
     box-sizing: border-box;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
 }
 
 .multiplication-grid {
@@ -260,17 +262,15 @@
 
 .multiplication-full-layout {
     display: flex;
-    gap: 5px;
-    /* Reduced gap */
+    gap: 15px;
     align-items: flex-start;
     width: 100%;
-    /* Remove overflow-x: auto to force fit, relying on flex-shrink/scaling */
     box-sizing: border-box;
     padding: 0 5px;
     flex: 1;
-    /* Take remaining vertical space */
-    overflow: hidden;
-    /* Prevent container scroll, panels handle it */
+    /* Default (laptop or smaller width): wrap elements and keep overflow visible */
+    flex-wrap: wrap;
+    overflow: visible;
 }
 
 .layout-column {
@@ -283,15 +283,12 @@
 /* Specific scaling or compacting for areas */
 .area-grid {
     flex: 0 0 auto;
-    /* Grid might not shrink well, keep it auto or specific width if possible */
+    min-width: 520px;
     display: flex;
     flex-direction: column;
-    height: 100%;
-    /* Force full height */
 }
 
 .area-grid .panel {
-    height: 100%;
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
@@ -302,13 +299,24 @@
     flex: 1;
 }
 
-.area-mixed-stats,
-.area-stats-lr {
-    flex: 1;
+.area-mixed-stats {
+    flex: 1 1 380px;
+    min-width: 380px;
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
+
+.area-stats-lr {
+    flex: 1 1 380px;
+    min-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* メディアクエリによる固定（nowrap）を削除し、
+   常に幅に応じて自然にラップ（折り返し）するようにしました */
 
 .sub-stats-group h3,
 .layout-column h3 {
@@ -322,4 +330,4 @@
     margin-top: 0;
     margin-bottom: 5px;
     /* font-size and text-align reverted to default as requested */
-}
+}
